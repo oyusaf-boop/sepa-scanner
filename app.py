@@ -63,16 +63,51 @@ def get_claude():
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_sp500():
-    df = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0]
-    return df["Symbol"].str.replace(".", "-", regex=False).tolist()
-
+    # Hardcoded S&P 500 tickers — avoids Wikipedia HTTP blocks on Streamlit Cloud
+    return [
+        "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK-B","LLY","AVGO",
+        "TSLA","WMT","JPM","V","UNH","XOM","ORCL","MA","COST","HD","PG","JNJ",
+        "ABBV","BAC","NFLX","KO","CRM","CVX","MRK","AMD","PEP","TMO","ACN","LIN",
+        "MCD","CSCO","ABT","GE","DHR","TXN","NEE","PM","ADBE","ISRG","IBM","RTX",
+        "QCOM","T","GS","AMGN","NOW","SPGI","CAT","INTU","VZ","BKNG","UBER","MS",
+        "AXP","PFE","LOW","DE","UNP","SYK","AMAT","ETN","TJX","BLK","GILD","ADP",
+        "VRTX","MDT","SBUX","C","MMC","ADI","PLD","CB","PANW","SCHW","BSX","LRCX",
+        "BMY","CI","SO","DUK","REGN","EOG","MO","ITW","WM","CME","FCX","SHW",
+        "NOC","USB","PH","EMR","CL","PYPL","KLAC","MCO","FI","APD","HCA","NSC",
+        "COF","TT","ELV","GD","SNPS","ICE","AON","CDNS","MSI","ZTS","ECL","ORLY",
+        "PCAR","PNC","ROP","TDG","MCK","MPC","HUM","AIG","PSA","FTNT","MMM","CEG",
+        "OXY","TFC","NXPI","MCHP","WELL","AFL","CTAS","AJG","CMI","D","JCI","SRE",
+        "CARR","FDX","PAYX","CCI","MNST","IDXX","ROST","AZO","PSX","MSCI","OTIS",
+        "KVUE","KMB","O","DXCM","A","F","GIS","WMB","EW","PRU","BK","GEHC","PCG",
+        "CPRT","CTSH","KMI","COR","YUM","EXC","HLT","GLW","HWM","VRSK","BIIB",
+        "DLTR","ANSS","DVN","XEL","ACGL","FAST","MTB","WAB","DD","LHX","HAL",
+        "FANG","NUE","GPN","AWK","PPG","RCL","ROK","SBAC","WBD","DG","KEYS",
+        "WEC","ETR","IR","ON","CHD","STZ","DTE","TROW","EFX","HPQ","BAX","TTWO",
+        "FITB","RF","CFG","EBAY","LYB","WY","ES","AEE","LUV","BALL","VICI","MKC",
+        "FTV","NTRS","K","HBAN","VTR","ALGN","TER","LVS","MGM","IFF","UDR","TDC",
+        "POOL","NVR","PHM","TOL","DHI","LEN","PVH","HIG","SNA","EXPD","JBHT",
+        "CHRW","CINF","AIZ","L","RL","VFC","HAS","MAT","NWSA","NWS","FOX","FOXA",
+        "PARA","DISCA","LUMN","IRM","CMS","NI","ATO","LNT","PNW","EVRG","CNP",
+        "NRG","AES","FE","PPL","EIX","ED","WEC","DTE","ETR","SO","DUK","NEE",
+        "AMCR","SEE","PKG","IP","MEA","CLX","CAG","HRL","SJM","CPB","GIS","MKC",
+        "MDLZ","KHC","HSY","TSN","PPC","SAFM","CALM","LNDC","APOG","JOUT","WOR"
+    ]
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_nasdaq100():
-    for t in pd.read_html("https://en.wikipedia.org/wiki/Nasdaq-100"):
-        if "Ticker" in t.columns:
-            return t["Ticker"].tolist()
-    return []
+    # Hardcoded Nasdaq 100 tickers
+    return [
+        "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","TSLA","AVGO","COST",
+        "NFLX","AMD","PEP","ADBE","CSCO","QCOM","INTU","AMGN","TXN","HON",
+        "BKNG","ISRG","SBUX","GILD","ADP","VRTX","MDLZ","PANW","REGN","LRCX",
+        "MU","ADI","KLAC","SNPS","CDNS","MELI","ASML","ORLY","MAR","CTAS",
+        "MNST","PCAR","FTNT","PYPL","DXCM","ABNB","IDXX","FAST","ROST","ODFL",
+        "VRSK","GEHC","KDP","DLTR","EXC","CTSH","BIIB","ON","ANSS","FANG",
+        "CEG","ZS","TEAM","CRWD","DDOG","ZM","OKTA","SNOW","WDAY","VEEV",
+        "TTWO","EBAY","SIRI","WBA","PARA","LCID","RIVN","NXPI","MCHP","LULU",
+        "CPRT","PAYX","SGEN","ILMN","ENPH","SEDG","ALGN","PODD","HOLX","TECH",
+        "BMRN","EXAS","INCY","NBIX","ALNY","RARE","ACAD","IONS","FOLD","PTCT"
+    ]
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
