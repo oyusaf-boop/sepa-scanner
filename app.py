@@ -69,7 +69,7 @@ if ticker:
         tt_passed = sum(data['tt'].values())
         extension = ((data['price'] / data['df']['SMA50'].iloc[-1]) - 1) * 100
         
-        # Decision Matrix with Clean Formatting
+        # Decision Matrix with Clean String Formatting
         if tt_passed == 8 and extension < 10:
             verdict, color = "BUY - HIGH CONVICTION SETUP", "green"
         elif tt_passed >= 6 and extension >= 10:
@@ -125,7 +125,8 @@ if ticker:
             try:
                 if "GEMINI_API_KEY" in st.secrets:
                     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                    # FIXED MODEL STRING FOR v1beta COMPATIBILITY
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
                     prompt = (
                         f"Act as Mark Minervini. Analyze {ticker} at ${data['price']}. "
