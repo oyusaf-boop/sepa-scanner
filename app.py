@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import google.generativeai as genai
+import anthropic
 
 # --- INSTITUTIONAL CONFIGURATION ---
 st.set_page_config(page_title="SEPA Institutional Terminal", layout="wide", initial_sidebar_state="expanded")
@@ -58,7 +58,7 @@ st.sidebar.header("Risk Mandate")
 acct_size = st.sidebar.number_input("Portfolio Size ($)", value=100000, step=1000)
 risk_pct = st.sidebar.slider("Risk Per Trade (%)", 0.25, 2.0, 1.0) / 100
 
-ticker = st.text_input("Enter Growth Ticker (e.g., NVDA, CELH, SMCI)", "NVDA").upper()
+ticker = st.text_input("Enter Growth Ticker", "NVDA").upper()
 
 if ticker:
     with st.spinner(f"Analyzing {ticker}..."):
@@ -69,7 +69,6 @@ if ticker:
         tt_passed = sum(data['tt'].values())
         extension = ((data['price'] / data['df']['SMA50'].iloc[-1]) - 1) * 100
         
-        # Decision Matrix with Clean String Formatting
         if tt_passed == 8 and extension < 10:
             verdict, color = "BUY - HIGH CONVICTION SETUP", "green"
         elif tt_passed >= 6 and extension >= 10:
@@ -107,41 +106,37 @@ if ticker:
 
         # --- TECHNICAL CHART ---
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
-        
-        # Price and MAs
         fig.add_trace(go.Candlestick(x=data['df'].index, open=data['df']['Open'], high=data['df']['High'], low=data['df']['Low'], close=data['df']['Close'], name="Price"), row=1, col=1)
         fig.add_trace(go.Scatter(x=data['df'].index, y=data['df']['SMA50'], name="50 SMA", line=dict(color='blue', width=1)), row=1, col=1)
         fig.add_trace(go.Scatter(x=data['df'].index, y=data['df']['SMA200'], name="200 SMA", line=dict(color='red', width=2)), row=1, col=1)
-        
-        # Volume
         fig.add_trace(go.Bar(x=data['df'].index, y=data['df']['Volume'], name="Volume", marker_color='gray'), row=2, col=1)
-        
-        # Final Layout Audit
         fig.update_layout(height=600, template="plotly_dark", showlegend=False, xaxis_rangeslider_visible=False)
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- FAIL-SAFE AI MENTOR SECTION ---
-        if st.button("🧠 Request AI Mentor Deep Dive"):
+        # --- CLAUDE AI MENTOR SECTION ---
+        if st.button("🧠 Request Claude Deep Dive"):
             try:
-                if "GEMINI_API_KEY" in st.secrets:
-                    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                    # FIXED MODEL STRING FOR v1beta COMPATIBILITY
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                if "ANTHROPIC_API_KEY" in st.secrets:
+                    client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
                     
                     prompt = (
-                        f"Act as Mark Minervini. Analyze {ticker} at ${data['price']}. "
-                        f"Trend Score is {tt_passed}/8. Price is {extension:.1f}% from its 50MA. "
-                        f"Quarterly EPS growth is {data['eps_growth']*100:.1f}%. "
-                        "Provide a blunt institutional verdict on VCP quality and Stage 2 status."
+                        f"Analyze {ticker} at ${data['price']}. Trend Score: {tt_passed}/8. "
+                        f"Extension: {extension:.1f}%. EPS Growth: {data['eps_growth']*100:.1f}%. "
+                        "Provide a blunt Mark Minervini style verdict on Stage 2 status and VCP quality."
                     )
                     
-                    with st.spinner("Consulting with the Mentor..."):
-                        response = model.generate_content(prompt)
-                        st.info(f"**Mark Minervini's Verdict:**\n\n{response.text}")
+                    with st.spinner("Consulting Claude..."):
+                        message = client.messages.create(
+                            model="claude-3-5-sonnet-20240620",
+                            max_tokens=500,
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        # Extract content correctly from the Anthropic response object
+                        st.info(f"**Claude's Verdict:**\n\n{message.content[0].text}")
                 else:
-                    st.error("API Key Not Found in Streamlit Secrets.")
+                    st.error("Missing 'ANTHROPIC_API_KEY' in Secrets.")
             except Exception as e:
-                st.error(f"Mentor Connection Error: {str(e)}")
+                st.error(f"Claude Connection Error: {str(e)}")
 
     else:
         st.error("Insufficient data or invalid ticker.")
