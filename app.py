@@ -17,8 +17,9 @@ except Exception:
 # --- CORE SEPA LOGIC ENGINE ---
 def get_sepa_data(ticker):
     stock = yf.Ticker(ticker)
+    # Pulling 2 years of data to ensure we have enough for 200 SMA and 52-week metrics
     hist = stock.history(period="2y")
-    if hist.empty: return None
+    if hist.empty or len(hist) < 260: return None
     
     # Technical Indicators
     hist['SMA50'] = hist['Close'].rolling(window=50).mean()
@@ -26,8 +27,11 @@ def get_sepa_data(ticker):
     hist['SMA200'] = hist['Close'].rolling(window=200).mean()
     
     curr_price = hist['Close'].iloc[-1]
-    low_52 = hist['Close'].suffix(-252).min() if len(hist) > 252 else hist['Close'].min()
-    high_52 = hist['Close'].suffix(-252).max() if len(hist) > 252 else hist['Close'].max()
+    
+    # Correct 52-week High/Low Logic
+    past_year = hist.iloc[-252:]
+    low_52 = past_year['Low'].min()
+    high_52 = past_year['High'].max()
     
     # Trend Template Alignment (Minervini Criteria)
     criteria = {
