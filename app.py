@@ -23,7 +23,7 @@ def fetch_sepa_data(ticker):
         
         price = df['Close'].iloc[-1]
         
-        # Robust 52-Week Logic (Pandas Slicing Fix)
+        # Robust 52-Week Logic
         past_year = df.tail(252)
         low_52 = past_year['Low'].min()
         high_52 = past_year['High'].max()
@@ -77,38 +77,4 @@ if ticker:
         elif tt_passed < 5:
             verdict, color = "❌ AVOID - TREND TEMPLATE FAILED", "red"
         else:
-            verdict, color = "👀 WATCH - FORMING BASE / STAGE 1", "blue"
-            
-        st.markdown(f"### Institutional Verdict: :{color}[{verdict}]")
-        
-        # --- TOP METRICS ---
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Trend Template", f"{tt_passed}/8")
-        m2.metric("50MA Extension", f"{extension:.1f}%")
-        m3.metric("EPS Growth (Q)", f"{data['eps_growth']*100:.1f}%")
-        m4.metric("Rev Growth (Q)", f"{data['rev_growth']*100:.1f}%")
-
-        # --- EXECUTION: BUY CHEAT SHEET ---
-        with st.expander("📊 Execution & Position Sizing", expanded=True):
-            c1, c2, c3 = st.columns(3)
-            suggested_stop = data['df']['Low'].tail(15).min()
-            stop_price = c1.number_input("Stop Loss Price ($)", value=float(round(suggested_stop, 2)))
-            
-            risk_per_share = data['price'] - stop_price
-            if risk_per_share > 0:
-                shares = int((acct_size * risk_pct) / risk_per_share)
-                c2.metric("Position Size", f"{shares} Shares")
-                c2.caption(f"Risking ${acct_size * risk_pct:,.2f} (1%)")
-                
-                target_2r = data['price'] + (risk_per_share * 2)
-                c3.metric("2R Profit Target", f"${target_2r:.2f}")
-            else:
-                st.warning("Stop loss must be below current price.")
-
-        # --- TECHNICAL CHART ---
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
-        fig.add_trace(go.Candlestick(x=data['df'].index, open=data['df']['Open'], high=data['df']['High'], low=data['df']['Low'], close=data['df']['Close'], name="Price"), row=1, col=1)
-        fig.add_trace(go.Scatter(x=data['df'].index, y=data['df']['SMA50'], name="50 SMA", line=dict(color='blue', width=1)), row=1, col=1)
-        fig.add_trace(go.Scatter(x=data['df'].index, y=data['df']['SMA200'], name="200 SMA", line=dict(color='red', width=2)), row=1, col=1)
-        fig.add_trace(go.Bar(x=data['df'].index, y=data['df']['Volume'], name="Volume", marker_color='gray'), row=2, col=1)
-        fig.update_layout(height=600, template="plotly_dark", showlegend=False, xaxis_rangeslider_visible=
+            verdict, color = "👀 WATCH -
