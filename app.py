@@ -582,3 +582,104 @@ with tab_guide:
 
 st.divider()
 st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | Minervini SEPA Methodology")
+
+# ═══════════════════════════════════════════════════════════════
+# CHAT WINDOW — Ask Claude anything about trading / SEPA
+# ═══════════════════════════════════════════════════════════════
+st.markdown("---")
+st.markdown("## 💬 Ask Claude")
+st.markdown(
+    "<p style='color:#8b949e;font-size:13px;margin-top:-10px;'>"
+    "Ask anything about the SEPA methodology, a specific setup, or trading in general. "
+    "If you have a stock loaded in the Single Stock tab, mention the ticker and Claude will factor in its data."
+    "</p>",
+    unsafe_allow_html=True
+)
+
+# Initialize chat history in session state
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
+
+# Display chat history
+chat_container = st.container()
+with chat_container:
+    for msg in st.session_state["chat_history"]:
+        if msg["role"] == "user":
+            st.markdown(
+                f"""<div style="background:#1f2937;border-radius:10px;padding:12px 16px;
+                margin:6px 0;border-left:3px solid #388bfd;font-family:sans-serif;">
+                <span style="color:#8b949e;font-size:11px;">YOU</span><br>
+                <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f"""<div style="background:#161b22;border-radius:10px;padding:12px 16px;
+                margin:6px 0;border-left:3px solid #6e40c9;font-family:monospace;
+                white-space:pre-wrap;line-height:1.6;">
+                <span style="color:#8b949e;font-size:11px;">CLAUDE</span><br>
+                <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
+                unsafe_allow_html=True
+            )
+
+# Input row
+col_input, col_send, col_clear = st.columns([6, 1, 1])
+with col_input:
+    user_input = st.chat_input("Ask about SEPA, VCP, Stage 2, position sizing, a specific ticker...")
+
+if user_input:
+    if "ANTHROPIC_API_KEY" not in st.secrets:
+        st.error("Missing ANTHROPIC_API_KEY in Streamlit Secrets.")
+    else:
+        # Build context from current stock if loaded
+        stock_context = ""
+        if "d" in dir() and d is not None:
+            stock_context = (
+                f"\n\nThe user currently has {ticker_input} loaded in the scanner with these metrics:\n"
+                f"Price: ${d['price']:.2f} | TT Score: {d['tt_score']}/8 | Stage: {d['stage_label']} | "
+                f"VCP Score: {d['vcp_score']}/100 | Confirmed VCP: {d['is_vcp']} | "
+                f"Pivot: ${d['pivot']:.2f} | % to pivot: {d['pct_to_pivot']}% | "
+                f"EPS Growth: {d['eps_growth']*100:.1f}% | Rev Growth: {d['rev_growth']*100:.1f}%\n"
+                f"Use this data to give a more specific answer if relevant."
+            )
+
+        system_prompt = (
+            "You are an expert in Mark Minervini's SEPA (Specific Entry Point Analysis) trading methodology "
+            "and Stan Weinstein's Stage Analysis. You have deep knowledge of VCP (Volatility Contraction Pattern), "
+            "trend templates, relative strength, position sizing, and risk management. "
+            "Give concise, direct, actionable answers like a trading mentor would. "
+            "Don't be overly cautious — the user understands trading risk. "
+            "Keep responses focused and under 300 words unless a detailed explanation is needed."
+            + stock_context
+        )
+
+        # Add user message to history
+        st.session_state["chat_history"].append({"role": "user", "content": user_input})
+
+        # Build messages for API (full history for context)
+        messages = [
+            {"role": m["role"], "content": m["content"]}
+            for m in st.session_state["chat_history"]
+        ]
+
+        with st.spinner("Claude is thinking..."):
+            try:
+                client = get_claude()
+                response = client.messages.create(
+                    model="claude-sonnet-4-5",
+                    max_tokens=500,
+                    system=system_prompt,
+                    messages=messages
+                )
+                reply = response.content[0].text
+                st.session_state["chat_history"].append({"role": "assistant", "content": reply})
+                st.rerun()
+            except Exception as e:
+                st.error(f"Chat error: {e}")
+
+# Clear chat button
+if st.session_state["chat_history"]:
+    if st.button("🗑️ Clear Chat"):
+        st.session_state["chat_history"] = []
+        st.rerun()
+
