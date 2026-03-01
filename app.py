@@ -8,13 +8,14 @@ import google.generativeai as genai
 # --- INSTITUTIONAL CONFIGURATION ---
 st.set_page_config(page_title="SEPA Institutional Terminal", layout="wide", initial_sidebar_state="expanded")
 
-# Secure API Handling
+# Secure API Handling for Gemini
 def init_gemini():
     try:
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        return True
+        if "GEMINI_API_KEY" in st.secrets:
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+            return True
+        return False
     except:
-        st.sidebar.error("⚠️ GEMINI_API_KEY missing in Secrets.")
         return False
 
 # --- ENGINE: DATA & SEPA LOGIC ---
@@ -26,19 +27,19 @@ def fetch_sepa_data(ticker):
         df = stock.history(period="2y")
         if df.empty or len(df) < 260: return None
         
-        info = stock.info
-        
         # Technicals
         df['SMA50'] = df['Close'].rolling(window=50).mean()
         df['SMA150'] = df['Close'].rolling(window=150).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
-        df['Vol_Avg'] = df['Volume'].rolling(window=50).mean()
         
         price = df['Close'].iloc[-1]
-        low_52 = df['Low'].tail(252).min()
-        high_52 = df['High'].tail(252).max()
         
-        # 8-Point Trend Template Check
+        # Robust 52-Week Logic
+        past_year = df.tail(252)
+        low_52 = past_year['Low'].min()
+        high_52 = past_year['High'].max()
+        
+        # 8-Point Trend Template Check (Minervini)
         tt = {
             "1. Price > SMA150 & SMA200": price > df['SMA150'].iloc[-1] and price > df['SMA200'].iloc[-1],
             "2. SMA150 > SMA200": df['SMA150'].iloc[-1] > df['SMA200'].iloc[-1],
@@ -47,10 +48,11 @@ def fetch_sepa_data(ticker):
             "5. Price > SMA50": price > df['SMA50'].iloc[-1],
             "6. Price 30% Above 52w Low": price >= (low_52 * 1.30),
             "7. Price within 25% of 52w High": price >= (high_52 * 0.75),
-            "8. RS Rating (vs SPY)": True # Placeholder for logic below
+            "8. Trend Alignment (Positive)": price > df['SMA200'].iloc[-1]
         }
         
-        # Fundamentals (Acceleration Logic)
+        # Fundamental Data (Manual Fetch for Speed)
+        info = stock.info
         eps_growth = info.get('earningsQuarterlyGrowth', 0) or 0
         rev_growth = info.get('revenueGrowth', 0) or 0
         
@@ -58,7 +60,8 @@ def fetch_sepa_data(ticker):
             "df": df, "tt": tt, "price": price, "high_52": high_52, 
             "low_52": low_52, "eps_growth": eps_growth, "rev_growth": rev_growth
         }
-    except: return None
+    except Exception as e:
+        return None
 
 # --- UI COMPONENTS ---
 st.title("🛡️ SEPA Institutional Terminal")
@@ -73,21 +76,21 @@ if ticker:
         data = fetch_sepa_data(ticker)
         
     if data:
-        # --- VERDICT SECTION ---
+        # --- VERDICT ENGINE ---
         tt_passed = sum(data['tt'].values())
         extension = ((data['price'] / data['df']['SMA50'].iloc[-1]) - 1) * 100
         
-        # Strategic Decision Engine
-        if tt_passed >= 7 and extension < 8 and data['eps_growth'] > 0.2:
-            verdict, color = "🚀 BUY - STAGE 2 BREAKOUT", "#00FF00"
-        elif tt_passed >= 7 and extension >= 12:
-            verdict, color = "⚠️ WAIT - EXTENDED (DO NOT CHASE)", "#FFFF00"
+        # Decision Matrix
+        if tt_passed == 8 and extension < 10:
+            verdict, color = "🚀 BUY - HIGH CONVICTION SETUP", "green"
+        elif tt_passed >= 6 and extension >= 10:
+            verdict, color = "⚠️ WAIT - EXTENDED (DO NOT CHASE)", "orange"
         elif tt_passed < 5:
-            verdict, color = "❌ AVOID - TREND BROKEN / STAGE 4", "#FF0000"
+            verdict, color = "❌ AVOID - TREND TEMPLATE FAILED", "red"
         else:
-            verdict, color = "👀 WATCH - FORMING BASE", "#00AAFF"
+            verdict, color = "👀 WATCH - FORMING BASE / STAGE 1", "blue"
             
-        st.subheader(f"Institutional Verdict: :{color}[{verdict}]")
+        st.markdown(f"### Institutional Verdict: :{color}[{verdict}]")
         
         # --- TOP METRICS ---
         m1, m2, m3, m4 = st.columns(4)
@@ -96,18 +99,18 @@ if ticker:
         m3.metric("EPS Growth (Q)", f"{data['eps_growth']*100:.1f}%")
         m4.metric("Rev Growth (Q)", f"{data['rev_growth']*100:.1f}%")
 
-        # --- RISK/REWARD CALCULATOR ---
-        with st.expander("📊 Execution & Buy Cheat Sheet", expanded=True):
+        # --- EXECUTION: BUY CHEAT SHEET ---
+        with st.expander("📊 Execution & Position Sizing", expanded=True):
             c1, c2, c3 = st.columns(3)
-            # Find recent "tight" low for stop placement
-            suggested_stop = data['df']['Low'].tail(10).min()
-            stop_price = c1.number_input("Stop Loss ($)", value=suggested_stop)
+            # Find recent "tight" low for suggested stop
+            suggested_stop = data['df']['Low'].tail(15).min()
+            stop_price = c1.number_input("Stop Loss Price ($)", value=float(round(suggested_stop, 2)))
             
             risk_per_share = data['price'] - stop_price
             if risk_per_share > 0:
                 shares = int((acct_size * risk_pct) / risk_per_share)
                 c2.metric("Position Size", f"{shares} Shares")
-                c2.caption(f"Total Risk: ${acct_size * risk_pct:,.2f}")
+                c2.caption(f"Risking ${acct_size * risk_pct:,.2f} (1%)")
                 
                 target_2r = data['price'] + (risk_per_share * 2)
                 c3.metric("2R Profit Target", f"${target_2r:.2f}")
@@ -115,7 +118,7 @@ if ticker:
                 st.warning("Stop loss must be below current price.")
 
         # --- TECHNICAL CHART ---
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.7, 0.3])
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
         # Candlestick
         fig.add_trace(go.Candlestick(x=data['df'].index, open=data['df']['Open'], 
                       high=data['df']['High'], low=data['df']['Low'], 
@@ -133,13 +136,15 @@ if ticker:
         if st.button("🧠 Request AI Mentor Deep Dive"):
             if init_gemini():
                 model = genai.GenerativeModel('gemini-1.5-flash')
-                context = f"Ticker: {ticker}. Score: {tt_passed}/8. Extension: {extension}%. EPS Growth: {data['eps_growth']}. Price: {data['price']}."
-                prompt = f"Act as Mark Minervini. Analyze {context}. Give a blunt, professional verdict on the VCP quality and if this is institutional accumulation or a retail trap."
+                context = f"Ticker: {ticker}. Trend Score: {tt_passed}/8. Extension: {extension}%. EPS Growth: {data['eps_growth']}. Current Price: {data['price']}."
+                prompt = f"Act as Mark Minervini. Analyze {context}. Give a blunt, professional verdict on the VCP quality and if this is institutional accumulation or a retail trap. Mention if it is Stage 2."
                 response = model.generate_content(prompt)
                 st.info(f"**Mentor Verdict:**\n\n{response.text}")
+            else:
+                st.error("Gemini API Key missing in Streamlit Secrets.")
 
     else:
-        st.error("Ticker not found or insufficient history for 200 SMA.")
+        st.error("Insufficient data for this ticker. Ensure it has at least 1 year of trading history.")
 
 st.divider()
-st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | No Bottom Fishing.")
+st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Detection | No Bottom Fishing.")
