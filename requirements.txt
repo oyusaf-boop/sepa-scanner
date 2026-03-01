@@ -4,5 +4,4 @@ pandas
 numpy
 plotly
 anthropic
-lxml
-html5lib
+
