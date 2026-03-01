@@ -8,33 +8,22 @@ import google.generativeai as genai
 # --- INSTITUTIONAL CONFIGURATION ---
 st.set_page_config(page_title="SEPA Institutional Terminal", layout="wide", initial_sidebar_state="expanded")
 
-# Secure API Handling for Gemini
-def init_gemini():
-    try:
-        if "GEMINI_API_KEY" in st.secrets:
-            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            return True
-        return False
-    except:
-        return False
-
 # --- ENGINE: DATA & SEPA LOGIC ---
 @st.cache_data(ttl=3600)
 def fetch_sepa_data(ticker):
     try:
         stock = yf.Ticker(ticker)
-        # Pull 2 years for stable SMA200 and 52-week metrics
         df = stock.history(period="2y")
         if df.empty or len(df) < 260: return None
         
-        # Technicals
+        # Technical Indicators
         df['SMA50'] = df['Close'].rolling(window=50).mean()
         df['SMA150'] = df['Close'].rolling(window=150).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
         
         price = df['Close'].iloc[-1]
         
-        # Robust 52-Week Logic
+        # Robust 52-Week Logic (Pandas Slicing Fix)
         past_year = df.tail(252)
         low_52 = past_year['Low'].min()
         high_52 = past_year['High'].max()
@@ -51,7 +40,7 @@ def fetch_sepa_data(ticker):
             "8. Trend Alignment (Positive)": price > df['SMA200'].iloc[-1]
         }
         
-        # Fundamental Data (Manual Fetch for Speed)
+        # Fundamental Data
         info = stock.info
         eps_growth = info.get('earningsQuarterlyGrowth', 0) or 0
         rev_growth = info.get('revenueGrowth', 0) or 0
@@ -60,7 +49,7 @@ def fetch_sepa_data(ticker):
             "df": df, "tt": tt, "price": price, "high_52": high_52, 
             "low_52": low_52, "eps_growth": eps_growth, "rev_growth": rev_growth
         }
-    except Exception as e:
+    except Exception:
         return None
 
 # --- UI COMPONENTS ---
@@ -69,7 +58,7 @@ st.sidebar.header("Risk Mandate")
 acct_size = st.sidebar.number_input("Portfolio Size ($)", value=100000, step=1000)
 risk_pct = st.sidebar.slider("Risk Per Trade (%)", 0.25, 2.0, 1.0) / 100
 
-ticker = st.text_input("Enter Growth Ticker", "NVDA").upper()
+ticker = st.text_input("Enter Growth Ticker (e.g., NVDA, CELH, SMCI)", "NVDA").upper()
 
 if ticker:
     with st.spinner(f"Analyzing {ticker}..."):
@@ -102,7 +91,6 @@ if ticker:
         # --- EXECUTION: BUY CHEAT SHEET ---
         with st.expander("📊 Execution & Position Sizing", expanded=True):
             c1, c2, c3 = st.columns(3)
-            # Find recent "tight" low for suggested stop
             suggested_stop = data['df']['Low'].tail(15).min()
             stop_price = c1.number_input("Stop Loss Price ($)", value=float(round(suggested_stop, 2)))
             
@@ -119,32 +107,8 @@ if ticker:
 
         # --- TECHNICAL CHART ---
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
-        # Candlestick
-        fig.add_trace(go.Candlestick(x=data['df'].index, open=data['df']['Open'], 
-                      high=data['df']['High'], low=data['df']['Low'], 
-                      close=data['df']['Close'], name="Price"), row=1, col=1)
-        # Moving Averages
+        fig.add_trace(go.Candlestick(x=data['df'].index, open=data['df']['Open'], high=data['df']['High'], low=data['df']['Low'], close=data['df']['Close'], name="Price"), row=1, col=1)
         fig.add_trace(go.Scatter(x=data['df'].index, y=data['df']['SMA50'], name="50 SMA", line=dict(color='blue', width=1)), row=1, col=1)
         fig.add_trace(go.Scatter(x=data['df'].index, y=data['df']['SMA200'], name="200 SMA", line=dict(color='red', width=2)), row=1, col=1)
-        # Volume
         fig.add_trace(go.Bar(x=data['df'].index, y=data['df']['Volume'], name="Volume", marker_color='gray'), row=2, col=1)
-        
-        fig.update_layout(height=600, template="plotly_dark", showlegend=False, xaxis_rangeslider_visible=False)
-        st.plotly_chart(fig, use_container_width=True)
-
-        # --- AI MENTOR SECTION ---
-        if st.button("🧠 Request AI Mentor Deep Dive"):
-            if init_gemini():
-                model = genai.GenerativeModel('gemini-1.5-flash')
-                context = f"Ticker: {ticker}. Trend Score: {tt_passed}/8. Extension: {extension}%. EPS Growth: {data['eps_growth']}. Current Price: {data['price']}."
-                prompt = f"Act as Mark Minervini. Analyze {context}. Give a blunt, professional verdict on the VCP quality and if this is institutional accumulation or a retail trap. Mention if it is Stage 2."
-                response = model.generate_content(prompt)
-                st.info(f"**Mentor Verdict:**\n\n{response.text}")
-            else:
-                st.error("Gemini API Key missing in Streamlit Secrets.")
-
-    else:
-        st.error("Insufficient data for this ticker. Ensure it has at least 1 year of trading history.")
-
-st.divider()
-st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Detection | No Bottom Fishing.")
+        fig.update_layout(height=600, template="plotly_dark", showlegend=False, xaxis_rangeslider_visible=
