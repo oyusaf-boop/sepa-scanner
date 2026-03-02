@@ -132,7 +132,7 @@ def fetch_data(ticker):
         sma50  = float(df["SMA50"].iloc[-1])
         sma150 = float(df["SMA150"].iloc[-1])
         sma200 = float(df["SMA200"].iloc[-1])
-        sma200_1mo = float(df["SMA200"].iloc[-22])
+        sma200_1mo = float(df["SMA200"].iloc[-22]) if len(df) >= 222 else float(df["SMA200"].iloc[-1])
 
         tt = {
             "1. Price > SMA150 and SMA200":      bool(price > sma150 and price > sma200),
