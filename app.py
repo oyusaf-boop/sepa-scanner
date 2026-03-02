@@ -392,9 +392,9 @@ with tab_single:
             ex1, ex2, ex3 = st.columns(3)
 
             with ex1:
-                suggested_stop = float(d["df"]["Low"].tail(15).min())
-                stop_price = st.number_input("Stop Loss ($)", value=round(suggested_stop, 2),
-                                              step=0.01, key="stop_single")
+               suggested_stop = round(d["price"] * 0.92, 2)  # 8% below current price
+stop_price = st.number_input("Stop Loss ($)", value=suggested_stop,
+                              step=0.01, key="stop_single")
 
             risk_per_share = d["pivot"] - stop_price
             if risk_per_share > 0:
