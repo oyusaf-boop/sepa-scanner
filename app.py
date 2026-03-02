@@ -63,7 +63,6 @@ def get_claude():
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_sp500():
-    # Hardcoded S&P 500 tickers — avoids Wikipedia HTTP blocks on Streamlit Cloud
     return [
         "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK-B","LLY","AVGO",
         "TSLA","WMT","JPM","V","UNH","XOM","ORCL","MA","COST","HD","PG","JNJ",
@@ -76,26 +75,24 @@ def get_sp500():
         "NOC","USB","PH","EMR","CL","PYPL","KLAC","MCO","FI","APD","HCA","NSC",
         "COF","TT","ELV","GD","SNPS","ICE","AON","CDNS","MSI","ZTS","ECL","ORLY",
         "PCAR","PNC","ROP","TDG","MCK","MPC","HUM","AIG","PSA","FTNT","MMM","CEG",
-        "OXY","TFC","NXPI","MCHP","WELL","AFL","CTAS","AJG","CMI","D","JCI","SRE",
+        "OXY","TFC","NXPI","MCHP","WELL","AFL","CTAS","AJG","CMI","JCI","SRE",
         "CARR","FDX","PAYX","CCI","MNST","IDXX","ROST","AZO","PSX","MSCI","OTIS",
-        "KVUE","KMB","O","DXCM","A","F","GIS","WMB","EW","PRU","BK","GEHC","PCG",
-        "CPRT","CTSH","KMI","COR","YUM","EXC","HLT","GLW","HWM","VRSK","BIIB",
-        "DLTR","ANSS","DVN","XEL","ACGL","FAST","MTB","WAB","DD","LHX","HAL",
-        "FANG","NUE","GPN","AWK","PPG","RCL","ROK","SBAC","WBD","DG","KEYS",
-        "WEC","ETR","IR","ON","CHD","STZ","DTE","TROW","EFX","HPQ","BAX","TTWO",
-        "FITB","RF","CFG","EBAY","LYB","WY","ES","AEE","LUV","BALL","VICI","MKC",
-        "FTV","NTRS","K","HBAN","VTR","ALGN","TER","LVS","MGM","IFF","UDR","TDC",
-        "POOL","NVR","PHM","TOL","DHI","LEN","PVH","HIG","SNA","EXPD","JBHT",
-        "CHRW","CINF","AIZ","L","RL","VFC","HAS","MAT","NWSA","NWS","FOX","FOXA",
-        "PARA","DISCA","LUMN","IRM","CMS","NI","ATO","LNT","PNW","EVRG","CNP",
-        "NRG","AES","FE","PPL","EIX","ED","WEC","DTE","ETR","SO","DUK","NEE",
-        "AMCR","SEE","PKG","IP","MEA","CLX","CAG","HRL","SJM","CPB","GIS","MKC",
-        "MDLZ","KHC","HSY","TSN","PPC","SAFM","CALM","LNDC","APOG","JOUT","WOR"
+        "KMB","DXCM","A","F","GIS","WMB","EW","PRU","BK","GEHC","PCG","CPRT",
+        "CTSH","KMI","COR","YUM","EXC","HLT","GLW","HWM","VRSK","BIIB","DLTR",
+        "ANSS","DVN","XEL","ACGL","FAST","MTB","WAB","DD","LHX","HAL","FANG",
+        "NUE","GPN","AWK","PPG","RCL","ROK","SBAC","DG","KEYS","WEC","ETR","IR",
+        "ON","CHD","STZ","DTE","TROW","EFX","HPQ","TTWO","FITB","RF","CFG",
+        "EBAY","LYB","WY","ES","AEE","LUV","BALL","VICI","MKC","FTV","NTRS",
+        "HBAN","VTR","ALGN","TER","LVS","MGM","IFF","POOL","NVR","PHM","TOL",
+        "DHI","LEN","HIG","SNA","EXPD","JBHT","CHRW","CINF","AIZ","RL","HAS",
+        "IRM","CMS","NI","ATO","LNT","PNW","EVRG","CNP","NRG","AES","FE","PPL",
+        "AMCR","SEE","PKG","IP","CLX","CAG","HRL","SJM","CPB","MDLZ","KHC",
+        "HSY","TSN","ENPH","SEDG","PODD","HOLX","TECH","BMRN","INCY","NBIX"
     ]
+
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_nasdaq100():
-    # Hardcoded Nasdaq 100 tickers
     return [
         "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","TSLA","AVGO","COST",
         "NFLX","AMD","PEP","ADBE","CSCO","QCOM","INTU","AMGN","TXN","HON",
@@ -103,10 +100,8 @@ def get_nasdaq100():
         "MU","ADI","KLAC","SNPS","CDNS","MELI","ASML","ORLY","MAR","CTAS",
         "MNST","PCAR","FTNT","PYPL","DXCM","ABNB","IDXX","FAST","ROST","ODFL",
         "VRSK","GEHC","KDP","DLTR","EXC","CTSH","BIIB","ON","ANSS","FANG",
-        "CEG","ZS","TEAM","CRWD","DDOG","ZM","OKTA","SNOW","WDAY","VEEV",
-        "TTWO","EBAY","SIRI","WBA","PARA","LCID","RIVN","NXPI","MCHP","LULU",
-        "CPRT","PAYX","SGEN","ILMN","ENPH","SEDG","ALGN","PODD","HOLX","TECH",
-        "BMRN","EXAS","INCY","NBIX","ALNY","RARE","ACAD","IONS","FOLD","PTCT"
+        "CEG","ZS","TEAM","CRWD","DDOG","WDAY","VEEV","TTWO","EBAY","NXPI",
+        "MCHP","LULU","CPRT","PAYX","ILMN","ENPH","SEDG","ALGN","PODD","HOLX"
     ]
 
 
@@ -140,14 +135,14 @@ def fetch_data(ticker):
         sma200_1mo = float(df["SMA200"].iloc[-22])
 
         tt = {
-            "1. Price > SMA150 and SMA200":    bool(price > sma150 and price > sma200),
-            "2. SMA150 > SMA200":              bool(sma150 > sma200),
-            "3. SMA200 Trending Up (1mo)":     bool(sma200 > sma200_1mo),
-            "4. SMA50 > SMA150 and SMA200":    bool(sma50 > sma150 and sma50 > sma200),
-            "5. Price > SMA50":                bool(price > sma50),
-            "6. Price 30pct Above 52w Low":    bool(price >= low52 * 1.30),
+            "1. Price > SMA150 and SMA200":      bool(price > sma150 and price > sma200),
+            "2. SMA150 > SMA200":                bool(sma150 > sma200),
+            "3. SMA200 Trending Up (1mo)":        bool(sma200 > sma200_1mo),
+            "4. SMA50 > SMA150 and SMA200":      bool(sma50 > sma150 and sma50 > sma200),
+            "5. Price > SMA50":                  bool(price > sma50),
+            "6. Price 30pct Above 52w Low":      bool(price >= low52 * 1.30),
             "7. Price Within 25pct of 52w High": bool(price >= high52 * 0.75),
-            "8. RS Positive vs SMA200":        bool(price > sma200),
+            "8. RS Positive vs SMA200":          bool(price > sma200),
         }
 
         slope20 = float((df["SMA150"].iloc[-1] - df["SMA150"].iloc[-20]) / df["SMA150"].iloc[-20] * 100)
@@ -243,13 +238,13 @@ def make_chart(d, ticker, stop_price, target_2r, target_3r):
             x=df.index, y=df[col], name=name,
             line=dict(color=color, width=width)
         ), row=1, col=1)
-    fig.add_hline(y=d["pivot"],   line=dict(color="#00e5ff", width=1.5, dash="dash"),
+    fig.add_hline(y=d["pivot"],  line=dict(color="#00e5ff", width=1.5, dash="dash"),
                   annotation_text=f"Pivot ${d['pivot']:.2f}", row=1, col=1)
-    fig.add_hline(y=stop_price,   line=dict(color="#f85149", width=1.2, dash="dot"),
+    fig.add_hline(y=stop_price,  line=dict(color="#f85149", width=1.2, dash="dot"),
                   annotation_text=f"Stop ${stop_price:.2f}", row=1, col=1)
-    fig.add_hline(y=target_2r,    line=dict(color="#3fb950", width=1.0, dash="dashdot"),
+    fig.add_hline(y=target_2r,   line=dict(color="#3fb950", width=1.0, dash="dashdot"),
                   annotation_text=f"2R ${target_2r:.2f}", row=1, col=1)
-    fig.add_hline(y=target_3r,    line=dict(color="#b9f6ca", width=1.0, dash="dashdot"),
+    fig.add_hline(y=target_3r,   line=dict(color="#b9f6ca", width=1.0, dash="dashdot"),
                   annotation_text=f"3R ${target_3r:.2f}", row=1, col=1)
     colors = ["#26a69a" if c >= o else "#ef5350"
               for c, o in zip(df["Close"], df["Open"])]
@@ -392,9 +387,9 @@ with tab_single:
             ex1, ex2, ex3 = st.columns(3)
 
             with ex1:
-               suggested_stop = round(d["price"] * 0.92, 2)  # 8% below current price
-stop_price = st.number_input("Stop Loss ($)", value=suggested_stop,
-                              step=0.01, key="stop_single")
+                suggested_stop = round(d["price"] * 0.92, 2)
+                stop_price = st.number_input("Stop Loss ($)", value=suggested_stop,
+                                             step=0.01, key="stop_single")
 
             risk_per_share = d["pivot"] - stop_price
             if risk_per_share > 0:
@@ -413,7 +408,7 @@ stop_price = st.number_input("Stop Loss ($)", value=suggested_stop,
                     st.metric("3R Target",   f"${target_3r:.2f}", delta=f"+{(target_3r/d['price']-1)*100:.1f}%")
             else:
                 st.warning("Stop loss must be below pivot price.")
-                stop_price = suggested_stop
+                stop_price = round(d["price"] * 0.92, 2)
                 target_2r  = d["pivot"] * 1.10
                 target_3r  = d["pivot"] * 1.15
                 shares     = 0
@@ -475,7 +470,7 @@ with tab_scanner:
     with sc1:
         universe = st.selectbox("Universe", ["S&P 500", "Nasdaq 100", "Custom"])
     with sc2:
-        max_tickers = st.slider("Max Tickers", 10, 503, 100, 10)
+        max_tickers = st.slider("Max Tickers", 10, 200, 100, 10)
     with sc3:
         custom_raw = st.text_input("Custom Tickers (comma separated)", "AAPL,NVDA,MSFT,META,GOOGL")
 
@@ -483,13 +478,12 @@ with tab_scanner:
     require_vcp    = st.checkbox("Require VCP Confirmed", value=False)
 
     if st.button("Run Scan", type="primary", use_container_width=True):
-        with st.spinner("Loading universe..."):
-            if universe == "S&P 500":
-                tickers = get_sp500()[:max_tickers]
-            elif universe == "Nasdaq 100":
-                tickers = get_nasdaq100()[:max_tickers]
-            else:
-                tickers = [t.strip().upper() for t in custom_raw.split(",") if t.strip()]
+        if universe == "S&P 500":
+            tickers = get_sp500()[:max_tickers]
+        elif universe == "Nasdaq 100":
+            tickers = get_nasdaq100()[:max_tickers]
+        else:
+            tickers = [t.strip().upper() for t in custom_raw.split(",") if t.strip()]
 
         prog  = st.progress(0, text="Scanning...")
         rows  = []
@@ -509,20 +503,20 @@ with tab_scanner:
             verdict_text, _ = get_verdict(d)
             ext = (d["price"] / d["sma50"] - 1) * 100
             rows.append({
-                "Ticker":     t,
-                "Name":       d["name"],
-                "Price":      d["price"],
-                "TT Score":   d["tt_score"],
-                "Stage":      d["stage_label"],
-                "VCP Score":  d["vcp_score"],
-                "VCP":        "Yes" if d["is_vcp"] else "No",
-                "Ext%":       round(ext, 1),
-                "Pivot":      d["pivot"],
-                "%toPivot":   d["pct_to_pivot"],
-                "EPS Gr%":    round(d["eps_growth"]*100, 1),
-                "Rev Gr%":    round(d["rev_growth"]*100, 1),
-                "Sector":     d["sector"],
-                "Verdict":    verdict_text,
+                "Ticker":    t,
+                "Name":      d["name"],
+                "Price":     d["price"],
+                "TT Score":  d["tt_score"],
+                "Stage":     d["stage_label"],
+                "VCP Score": d["vcp_score"],
+                "VCP":       "Yes" if d["is_vcp"] else "No",
+                "Ext%":      round(ext, 1),
+                "Pivot":     d["pivot"],
+                "%toPivot":  d["pct_to_pivot"],
+                "EPS Gr%":   round(d["eps_growth"]*100, 1),
+                "Rev Gr%":   round(d["rev_growth"]*100, 1),
+                "Sector":    d["sector"],
+                "Verdict":   verdict_text,
             })
             time.sleep(0.05)
 
@@ -615,88 +609,53 @@ with tab_guide:
 - No volume on breakout = failed breakout, exit immediately
     """)
 
-st.divider()
-st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | Minervini SEPA Methodology")
-
-# ═══════════════════════════════════════════════════════════════
-# CHAT WINDOW — Ask Claude anything about trading / SEPA
-# ═══════════════════════════════════════════════════════════════
+# ── Chat Window ───────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## 💬 Ask Claude")
+st.markdown("## Ask Claude")
 st.markdown(
     "<p style='color:#8b949e;font-size:13px;margin-top:-10px;'>"
-    "Ask anything about the SEPA methodology, a specific setup, or trading in general. "
-    "If you have a stock loaded in the Single Stock tab, mention the ticker and Claude will factor in its data."
+    "Ask anything about SEPA, VCP, Stage 2, position sizing, or a specific ticker."
     "</p>",
     unsafe_allow_html=True
 )
 
-# Initialize chat history in session state
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
-# Display chat history
-chat_container = st.container()
-with chat_container:
-    for msg in st.session_state["chat_history"]:
-        if msg["role"] == "user":
-            st.markdown(
-                f"""<div style="background:#1f2937;border-radius:10px;padding:12px 16px;
-                margin:6px 0;border-left:3px solid #388bfd;font-family:sans-serif;">
-                <span style="color:#8b949e;font-size:11px;">YOU</span><br>
-                <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                f"""<div style="background:#161b22;border-radius:10px;padding:12px 16px;
-                margin:6px 0;border-left:3px solid #6e40c9;font-family:monospace;
-                white-space:pre-wrap;line-height:1.6;">
-                <span style="color:#8b949e;font-size:11px;">CLAUDE</span><br>
-                <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
-                unsafe_allow_html=True
-            )
+for msg in st.session_state["chat_history"]:
+    if msg["role"] == "user":
+        st.markdown(
+            f"""<div style="background:#1f2937;border-radius:10px;padding:12px 16px;
+            margin:6px 0;border-left:3px solid #388bfd;">
+            <span style="color:#8b949e;font-size:11px;">YOU</span><br>
+            <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f"""<div style="background:#161b22;border-radius:10px;padding:12px 16px;
+            margin:6px 0;border-left:3px solid #6e40c9;font-family:monospace;
+            white-space:pre-wrap;line-height:1.6;">
+            <span style="color:#8b949e;font-size:11px;">CLAUDE</span><br>
+            <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
+            unsafe_allow_html=True
+        )
 
-# Input row
-col_input, col_send, col_clear = st.columns([6, 1, 1])
-with col_input:
-    user_input = st.chat_input("Ask about SEPA, VCP, Stage 2, position sizing, a specific ticker...")
+user_input = st.chat_input("Ask about SEPA, VCP, Stage 2, position sizing, a specific ticker...")
 
 if user_input:
     if "ANTHROPIC_API_KEY" not in st.secrets:
         st.error("Missing ANTHROPIC_API_KEY in Streamlit Secrets.")
     else:
-        # Build context from current stock if loaded
-        stock_context = ""
-        if "d" in dir() and d is not None:
-            stock_context = (
-                f"\n\nThe user currently has {ticker_input} loaded in the scanner with these metrics:\n"
-                f"Price: ${d['price']:.2f} | TT Score: {d['tt_score']}/8 | Stage: {d['stage_label']} | "
-                f"VCP Score: {d['vcp_score']}/100 | Confirmed VCP: {d['is_vcp']} | "
-                f"Pivot: ${d['pivot']:.2f} | % to pivot: {d['pct_to_pivot']}% | "
-                f"EPS Growth: {d['eps_growth']*100:.1f}% | Rev Growth: {d['rev_growth']*100:.1f}%\n"
-                f"Use this data to give a more specific answer if relevant."
-            )
-
         system_prompt = (
-            "You are an expert in Mark Minervini's SEPA (Specific Entry Point Analysis) trading methodology "
-            "and Stan Weinstein's Stage Analysis. You have deep knowledge of VCP (Volatility Contraction Pattern), "
-            "trend templates, relative strength, position sizing, and risk management. "
-            "Give concise, direct, actionable answers like a trading mentor would. "
-            "Don't be overly cautious — the user understands trading risk. "
-            "Keep responses focused and under 300 words unless a detailed explanation is needed."
-            + stock_context
+            "You are an expert in Mark Minervini's SEPA trading methodology and Stan Weinstein's Stage Analysis. "
+            "You have deep knowledge of VCP patterns, trend templates, relative strength, position sizing, "
+            "and risk management. Give concise, direct, actionable answers like a trading mentor. "
+            "Keep responses under 300 words unless detail is needed."
         )
-
-        # Add user message to history
         st.session_state["chat_history"].append({"role": "user", "content": user_input})
-
-        # Build messages for API (full history for context)
-        messages = [
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state["chat_history"]
-        ]
-
+        messages = [{"role": m["role"], "content": m["content"]}
+                    for m in st.session_state["chat_history"]]
         with st.spinner("Claude is thinking..."):
             try:
                 client = get_claude()
@@ -712,9 +671,10 @@ if user_input:
             except Exception as e:
                 st.error(f"Chat error: {e}")
 
-# Clear chat button
 if st.session_state["chat_history"]:
-    if st.button("🗑️ Clear Chat"):
+    if st.button("Clear Chat"):
         st.session_state["chat_history"] = []
         st.rerun()
 
+st.divider()
+st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | Minervini SEPA Methodology")
