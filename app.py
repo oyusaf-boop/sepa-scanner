@@ -64,30 +64,70 @@ def get_claude():
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_sp500():
     return [
-        "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK-B","LLY","AVGO",
-        "TSLA","WMT","JPM","V","UNH","XOM","ORCL","MA","COST","HD","PG","JNJ",
-        "ABBV","BAC","NFLX","KO","CRM","CVX","MRK","AMD","PEP","TMO","ACN","LIN",
-        "MCD","CSCO","ABT","GE","DHR","TXN","NEE","PM","ADBE","ISRG","IBM","RTX",
-        "QCOM","T","GS","AMGN","NOW","SPGI","CAT","INTU","VZ","BKNG","UBER","MS",
-        "AXP","PFE","LOW","DE","UNP","SYK","AMAT","ETN","TJX","BLK","GILD","ADP",
-        "VRTX","MDT","SBUX","C","MMC","ADI","PLD","CB","PANW","SCHW","BSX","LRCX",
-        "BMY","CI","SO","DUK","REGN","EOG","MO","ITW","WM","CME","FCX","SHW",
-        "NOC","USB","PH","EMR","CL","PYPL","KLAC","MCO","FI","APD","HCA","NSC",
-        "COF","TT","ELV","GD","SNPS","ICE","AON","CDNS","MSI","ZTS","ECL","ORLY",
-        "PCAR","PNC","ROP","TDG","MCK","MPC","HUM","AIG","PSA","FTNT","MMM","CEG",
-        "OXY","TFC","NXPI","MCHP","WELL","AFL","CTAS","AJG","CMI","JCI","SRE",
-        "CARR","FDX","PAYX","CCI","MNST","IDXX","ROST","AZO","PSX","MSCI","OTIS",
-        "KMB","DXCM","A","F","GIS","WMB","EW","PRU","BK","GEHC","PCG","CPRT",
-        "CTSH","KMI","COR","YUM","EXC","HLT","GLW","HWM","VRSK","BIIB","DLTR",
-        "ANSS","DVN","XEL","ACGL","FAST","MTB","WAB","DD","LHX","HAL","FANG",
-        "NUE","GPN","AWK","PPG","RCL","ROK","SBAC","DG","KEYS","WEC","ETR","IR",
-        "ON","CHD","STZ","DTE","TROW","EFX","HPQ","TTWO","FITB","RF","CFG",
-        "EBAY","LYB","WY","ES","AEE","LUV","BALL","VICI","MKC","FTV","NTRS",
-        "HBAN","VTR","ALGN","TER","LVS","MGM","IFF","POOL","NVR","PHM","TOL",
-        "DHI","LEN","HIG","SNA","EXPD","JBHT","CHRW","CINF","AIZ","RL","HAS",
-        "IRM","CMS","NI","ATO","LNT","PNW","EVRG","CNP","NRG","AES","FE","PPL",
-        "AMCR","SEE","PKG","IP","CLX","CAG","HRL","SJM","CPB","MDLZ","KHC",
-        "HSY","TSN","ENPH","SEDG","PODD","HOLX","TECH","BMRN","INCY","NBIX"
+        @st.cache_data(ttl=86400, show_spinner=False)
+def get_sp500():
+    return [
+        # Technology
+        "AAPL","MSFT","NVDA","AVGO","ORCL","CRM","ACN","ADBE","CSCO","TXN",
+        "QCOM","AMD","INTU","IBM","AMAT","LRCX","KLAC","ADI","SNPS","CDNS",
+        "PANW","NOW","FTNT","MSI","CTSH","ANSS","TDC","KEYS","GDDY","JNPR",
+        "AKAM","FFIV","NLOK","PTC","EPAM","ENPH","SEDG","GLW","HPQ","HPE",
+        "STX","WDC","NTAP","ZBRA","TER","TRMB","MKSI","COHR","FSLR","ROP",
+
+        # Healthcare & Biotech (no insurance)
+        "LLY","UNH","JNJ","ABBV","MRK","TMO","ABT","DHR","ISRG","AMGN",
+        "VRTX","REGN","GILD","MDT","BSX","SYK","IDXX","DXCM","BIIB","ILMN",
+        "HOLX","PODD","TECH","BMRN","INCY","NBIX","ALGN","EXAS","ALNY","RARE",
+        "IONS","ACAD","FOLD","PTCT","SRPT","BLFS","NTRA","PCVX","RXRX","LEGN",
+        "ROIV","ARWR","BEAM","NTLA","CRSP","EDIT","FATE","KYMR","PRLD","RCUS",
+
+        # Consumer Discretionary (no alcohol/gambling)
+        "AMZN","TSLA","HD","MCD","SBUX","LOW","TJX","BKNG","ORLY","AZO",
+        "ROST","DLTR","DG","LULU","NVR","PHM","DHI","LEN","TOL","POOL",
+        "UBER","ABNB","MAR","HLT","RCL","EXPE","TRIP","LYFT","DASH","RIVN",
+        "LCID","F","GM","APTV","LEA","BWA","GNTX","MOD","LKQ","AAP",
+
+        # Consumer Staples (no alcohol/tobacco)
+        "WMT","COST","PG","KO","PEP","MDLZ","KHC","GIS","CAG","HRL",
+        "SJM","CPB","MKC","CLX","CHD","EL","CL","KMB","KVUE","COTY",
+        "HSY","MNST","KDP","CELH","VITL","NOMD","CHEF","SFM","GO","CASY",
+
+        # Industrials (no weapons/defense)
+        "GE","CAT","HON","ETN","EMR","ITW","PH","ROK","CMI","IR",
+        "CARR","OTIS","WAB","EXPD","JBHT","CHRW","ODFL","XPO","SAIA","TFII",
+        "FDX","UPS","PCAR","DE","AGCO","CNH","TTC","LII","MAS","SNA",
+        "SWK","FAST","GWW","MSC","WSO","AOS","ALLE","NDSN","GNRC","FELE",
+
+        # Energy (oil & gas operations OK, no pure financials)
+        "XOM","CVX","EOG","MPC","PSX","VLO","PXD","COP","OXY","HAL",
+        "SLB","BKR","FANG","DVN","APA","MRO","HES","CTRA","PR","SM",
+        "MTDR","ESTE","NOG","VTLE","MGY","CHRD","GPOR","MEG","WTI","TALO",
+
+        # Materials
+        "LIN","APD","ECL","SHW","PPG","NUE","FCX","NEM","GOLD","ALB",
+        "DD","DOW","LYB","EMN","CE","OLN","WLK","TREX","EXP","SUM",
+        "MLM","VMC","CRH","GCP","UFPI","BLDR","IBP","BECN","GMS","SITE",
+
+        # Real Estate (REITs - no interest-based financials)
+        "PLD","CCI","AMT","SBAC","EQIX","PSA","WELL","VTR","O","WPC",
+        "VICI","IRM","EXR","CUBE","LSI","REXR","EGP","STAG","FR","DRE",
+        "ARE","BXP","SLG","HIW","CUZ","PDM","VRE","ESRT","JBGS","NNN",
+
+        # Utilities (infrastructure)
+        "NEE","SO","DUK","SRE","AEP","EXC","XEL","WEC","ES","ETR",
+        "DTE","PPL","FE","EIX","PCG","PEG","CNP","NI","ATO","LNT",
+        "PNW","EVRG","NRG","AES","CEG","VST","OGE","IDACORP","POR","AVA",
+
+        # Communication (no media with adult content)
+        "GOOGL","GOOG","META","NFLX","TMUS","VZ","T","CHTR","CMCSA","DISH",
+        "FOXA","FOX","WBD","PARA","LYV","TTWO","EA","ATVI","RBLX","U",
+        "ZG","MTCH","IAC","ANGI","CARS","CDW","CIEN","LUMN","FYBR","ATUS",
+
+        # Miscellaneous high-quality growth
+        "SPGI","MCO","MSCI","ICE","CME","VRSK","CPRT","CTAS","PAYX","ADP",
+        "FI","GPN","WEX","EFX","TRU","FICO","BR","WU","MMS","CSGP",
+        "DSGX","GWRE","PCOR","PRFT","MANH","PAYC","SMAR","APPF","NCNO","TASK","MA","V"
+    
     ]
 
 
