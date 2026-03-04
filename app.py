@@ -64,34 +64,30 @@ def get_claude():
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_sp500():
     return [
-       @st.cache_data(ttl=86400, show_spinner=False)
-def get_sp500():
-    return [
-        "AAPL","MSFT","NVDA","AVGO","ORCL","CRM","ACN","ADBE","CSCO","TXN",
-        "QCOM","AMD","INTU","IBM","AMAT","LRCX","KLAC","ADI","SNPS","CDNS",
-        "PANW","NOW","FTNT","MSI","CTSH","ANSS","KEYS","HPQ","GLW","TER",
-        "FSLR","ROP","ENPH","SEDG","LLY","JNJ","ABBV","MRK","TMO","ABT",
-        "DHR","ISRG","AMGN","VRTX","REGN","GILD","MDT","BSX","SYK","IDXX",
-        "DXCM","BIIB","ILMN","HOLX","PODD","TECH","BMRN","INCY","NBIX","ALGN",
-        "AMZN","TSLA","HD","MCD","SBUX","LOW","TJX","BKNG","ORLY","AZO",
-        "ROST","DLTR","DG","LULU","NVR","PHM","DHI","LEN","TOL","POOL",
-        "UBER","ABNB","MAR","HLT","RCL","F","GM","APTV","LKQ","AAP",
-        "WMT","COST","PG","KO","PEP","MDLZ","KHC","GIS","CAG","HRL",
-        "SJM","CPB","MKC","CLX","CHD","CL","KMB","HSY","MNST","KDP",
-        "GE","CAT","HON","ETN","EMR","ITW","PH","ROK","CMI","IR",
-        "CARR","OTIS","WAB","EXPD","JBHT","CHRW","ODFL","FDX","PCAR","DE",
-        "FAST","GWW","SNA","SWK","LII","MAS","NDSN","GNRC","AGCO","TTC",
-        "XOM","CVX","EOG","MPC","PSX","VLO","COP","OXY","HAL","SLB",
-        "BKR","FANG","DVN","APA","MRO","HES","CTRA","SM","MTDR","MGY",
-        "LIN","APD","ECL","SHW","PPG","NUE","FCX","NEM","ALB","DD",
-        "DOW","LYB","EMN","CE","OLN","WLK","TREX","MLM","VMC","CRH",
-        "PLD","CCI","AMT","SBAC","EQIX","PSA","WELL","VTR","O","WPC",
-        "VICI","IRM","EXR","CUBE","ARE","BXP","REXR","EGP","STAG","NNN",
-        "NEE","SO","DUK","SRE","AEP","EXC","XEL","WEC","ES","ETR",
-        "DTE","PPL","FE","EIX","PCG","PEG","CNP","NI","ATO","LNT",
-        "GOOGL","GOOG","META","NFLX","TMUS","CMCSA","TTWO","EA","RBLX","U",
-        "SPGI","MCO","MSCI","VRSK","CPRT","CTAS","PAYX","ADP","FI","EFX",
-        "FICO","BR","CSGP","PAYC","MANH","GWRE","PCOR","WEX","TRU","GPN"
+        "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK-B","LLY","AVGO",
+        "TSLA","WMT","JPM","V","UNH","XOM","ORCL","MA","COST","HD","PG","JNJ",
+        "ABBV","BAC","NFLX","KO","CRM","CVX","MRK","AMD","PEP","TMO","ACN","LIN",
+        "MCD","CSCO","ABT","GE","DHR","TXN","NEE","PM","ADBE","ISRG","IBM","RTX",
+        "QCOM","T","GS","AMGN","NOW","SPGI","CAT","INTU","VZ","BKNG","UBER","MS",
+        "AXP","PFE","LOW","DE","UNP","SYK","AMAT","ETN","TJX","BLK","GILD","ADP",
+        "VRTX","MDT","SBUX","C","MMC","ADI","PLD","CB","PANW","SCHW","BSX","LRCX",
+        "BMY","CI","SO","DUK","REGN","EOG","MO","ITW","WM","CME","FCX","SHW",
+        "NOC","USB","PH","EMR","CL","PYPL","KLAC","MCO","FI","APD","HCA","NSC",
+        "COF","TT","ELV","GD","SNPS","ICE","AON","CDNS","MSI","ZTS","ECL","ORLY",
+        "PCAR","PNC","ROP","TDG","MCK","MPC","HUM","AIG","PSA","FTNT","MMM","CEG",
+        "OXY","TFC","NXPI","MCHP","WELL","AFL","CTAS","AJG","CMI","JCI","SRE",
+        "CARR","FDX","PAYX","CCI","MNST","IDXX","ROST","AZO","PSX","MSCI","OTIS",
+        "KMB","DXCM","A","F","GIS","WMB","EW","PRU","BK","GEHC","PCG","CPRT",
+        "CTSH","KMI","COR","YUM","EXC","HLT","GLW","HWM","VRSK","BIIB","DLTR",
+        "ANSS","DVN","XEL","ACGL","FAST","MTB","WAB","DD","LHX","HAL","FANG",
+        "NUE","GPN","AWK","PPG","RCL","ROK","SBAC","DG","KEYS","WEC","ETR","IR",
+        "ON","CHD","STZ","DTE","TROW","EFX","HPQ","TTWO","FITB","RF","CFG",
+        "EBAY","LYB","WY","ES","AEE","LUV","BALL","VICI","MKC","FTV","NTRS",
+        "HBAN","VTR","ALGN","TER","LVS","MGM","IFF","POOL","NVR","PHM","TOL",
+        "DHI","LEN","HIG","SNA","EXPD","JBHT","CHRW","CINF","AIZ","RL","HAS",
+        "IRM","CMS","NI","ATO","LNT","PNW","EVRG","CNP","NRG","AES","FE","PPL",
+        "AMCR","SEE","PKG","IP","CLX","CAG","HRL","SJM","CPB","MDLZ","KHC",
+        "HSY","TSN","ENPH","SEDG","PODD","HOLX","TECH","BMRN","INCY","NBIX"
     ]
 
 
