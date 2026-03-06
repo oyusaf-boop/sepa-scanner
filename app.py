@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 st.set_page_config(
     page_title="SEPA Institutional Terminal",
-    page_icon="📈",
+    page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -74,7 +74,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Alpaca Config ─────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 ALPACA_KEY    = "AKSCP2RBJMBNI5ZBNEP2ATEYX4"
 ALPACA_SECRET = "3wywDhe8hL1VKeoT5AtsBdeprFxoH1McJ6gPC7E2Gu9h"
 ALPACA_BASE   = "https://api.alpaca.markets"
@@ -92,7 +92,7 @@ def get_claude():
     return anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
 
 
-# ── Alpaca: Market Direction (M in CAN SLIM) ──────────────────
+# ─── Alpaca: Market Direction (M in CAN SLIM) ────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_market_direction():
     """
@@ -170,7 +170,7 @@ def get_market_direction():
         return "Unknown", {}, str(e)
 
 
-# ── yfinance: Full CAN SLIM fundamentals ──────────────────────
+# ─── yfinance: Full CAN SLIM fundamentals ────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_canslim_fundamentals(ticker):
     """
@@ -181,7 +181,7 @@ def get_canslim_fundamentals(ticker):
         stock = yf.Ticker(ticker)
         info  = stock.info
 
-        # ── C: Current Quarter EPS growth ────────────────────
+        # ─── C: Current Quarter EPS growth ───────────────────────────────────────
         # Pull quarterly earnings
         try:
             qe = stock.quarterly_earnings
@@ -210,7 +210,7 @@ def get_canslim_fundamentals(ticker):
 
         c_pass = bool(c_eps_growth >= 0.25)
 
-        # ── A: Annual EPS growth ──────────────────────────────
+        # ─── A: Annual EPS growth ────────────────────────────────────────────────
         try:
             ae = stock.earnings  # annual
             if ae is not None and len(ae) >= 2:
@@ -232,13 +232,13 @@ def get_canslim_fundamentals(ticker):
 
         a_pass = bool(a_avg_growth >= 0.25)
 
-        # ── N: New High / Near 52-week high ───────────────────
+        # ─── N: New High / Near 52-week high ─────────────────────────────────────
         price   = float(info.get("currentPrice", info.get("regularMarketPrice", 0)) or 0)
         high52  = float(info.get("fiftyTwoWeekHigh", 0) or 0)
         n_pass  = bool(high52 > 0 and price >= high52 * 0.85)
         n_pct   = round((price / high52 - 1) * 100, 1) if high52 > 0 else 0.0
 
-        # ── S: Supply/Demand — float & accumulation ───────────
+        # ─── S: Supply/Demand – float & accumulation ─────────────────────────────
         float_shares = float(info.get("floatShares", 0) or 0)
         avg_vol      = float(info.get("averageVolume", 0) or 0)
         avg_vol10    = float(info.get("averageVolume10days", 0) or 0)
@@ -248,7 +248,7 @@ def get_canslim_fundamentals(ticker):
         s_float_ok = bool(0 < float_shares < 500_000_000)
         s_pass = bool(s_accum or s_float_ok)
 
-        # ── L: Leader — RS (relative strength) ───────────────
+        # ─── L: Leader – RS (relative strength) ──────────────────────────────────
         # We use RS rating proxy: 1yr price performance
         try:
             hist = stock.history(period="1y")
@@ -261,7 +261,7 @@ def get_canslim_fundamentals(ticker):
         # Leader = outperforming (proxy: >20% 1yr gain)
         l_pass = bool(l_perf_1yr > 20)
 
-        # ── I: Institutional Sponsorship ─────────────────────
+        # ─── I: Institutional Sponsorship ────────────────────────────────────────
         inst_own   = float(info.get("institutionalOwnershipPercentage",
                           info.get("heldPercentInstitutions", 0)) or 0)
         # Acceptable range: 30-80% (too high = overcrowded)
@@ -469,219 +469,137 @@ def get_verdict(d, cs_score=0):
 
 
 def make_chart(d, ticker, stop_price, target_2r, target_3r):
-    df = d["df"].tail(180).copy()
+    df = d["df"].tail(180).copy()          # last ~6 months
+    current_price = d["price"]
+    pivot        = d["pivot"]
+    high52       = d["high52"]
+    low52        = d["low52"]
 
-    # ── Panel heights: price bigger, volume/RS smaller ────────
     fig = make_subplots(
-        rows=3, cols=1, shared_xaxes=True,
-        vertical_spacing=0.02,
-        row_heights=[0.65, 0.18, 0.17],
-        subplot_titles=(None, None, None)
+        rows=4, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.04,
+        row_heights=[0.58, 0.15, 0.15, 0.12],
+        subplot_titles=("", "Volume", "Relative Strength vs SMA200", "ATR / Volatility"),
+        specs=[[{"secondary_y": False}], [{"secondary_y": False}], [{"secondary_y": False}], [{"secondary_y": True}]]
     )
 
-    # ── 1. Candlesticks — thinner wicks, crisper bodies ───────
-    fig.add_trace(go.Candlestick(
-        x=df.index,
-        open=df["Open"], high=df["High"],
-        low=df["Low"],   close=df["Close"],
-        increasing=dict(
-            line=dict(color="#00c076", width=1),
-            fillcolor="#00c076"
+    # ─── Main Candlestick ────────────────────────────────────────
+    fig.add_trace(
+        go.Candlestick(
+            x=df.index,
+            open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
+            increasing_line_color="#4ade80", increasing_fillcolor="rgba(74,222,128,0.18)",
+            decreasing_line_color="#f87171", decreasing_fillcolor="rgba(248,113,113,0.18)",
+            line=dict(width=1.1),
+            name="Price"
         ),
-        decreasing=dict(
-            line=dict(color="#ff4d4d", width=1),
-            fillcolor="#ff4d4d"
-        ),
-        whiskerwidth=0.3,
-        name="Price",
-        showlegend=False
-    ), row=1, col=1)
+        row=1, col=1
+    )
 
-    # ── 2. Moving Averages — crisp, styled like barchart ──────
-    ma_styles = [
-        ("SMA50",  "#f5c518", 1.5, "SMA 50"),
-        ("SMA150", "#ff8c00", 1.5, "SMA 150"),
-        ("SMA200", "#e040fb", 2.0, "SMA 200"),
+    # ─── Moving Averages ──────────────────────────────────────────
+    ma_configs = [
+        ("SMA10",  "#eab308", 1.0, "SMA10"),
+        ("SMA20",  "#84cc16", 1.1, "SMA20"),
+        ("SMA50",  "#facc15", 1.4, "SMA50"),
+        ("SMA150", "#fb923c", 1.6, "SMA150"),
+        ("SMA200", "#e11d48", 2.0, "SMA200"),
     ]
-    for col, color, width, label in ma_styles:
-        fig.add_trace(go.Scatter(
-            x=df.index, y=df[col],
-            name=label,
-            line=dict(color=color, width=width, shape="spline", smoothing=0.3),
-            hovertemplate=f"{label}: %{{y:.2f}}<extra></extra>"
-        ), row=1, col=1)
-
-    # ── 3. Price level lines — annotations right-side aligned ─
-    price_levels = [
-        (d["pivot"],   "#00e5ff", "dash",     f"Pivot  ${d['pivot']:.2f}"),
-        (stop_price,   "#ff4d4d", "dot",      f"Stop   ${stop_price:.2f}"),
-        (target_2r,    "#00c076", "dashdot",  f"2R     ${target_2r:.2f}"),
-        (target_3r,    "#69f0ae", "dashdot",  f"3R     ${target_3r:.2f}"),
-    ]
-    for level, color, dash, label in price_levels:
-        fig.add_hline(
-            y=level, row=1, col=1,
-            line=dict(color=color, width=1.2, dash=dash),
-            annotation=dict(
-                text=label,
-                font=dict(size=10, color=color, family="monospace"),
-                bgcolor="rgba(13,17,23,0.75)",
-                bordercolor=color,
-                borderwidth=1,
-                borderpad=3,
-                xref="paper", x=1.0,
-                xanchor="left"
+    for col, color, width, name in ma_configs:
+        if col in df.columns:
+            fig.add_trace(
+                go.Scatter(x=df.index, y=df[col], name=name,
+                           line=dict(color=color, width=width)),
+                row=1, col=1
             )
+
+    # ─── Key Levels ───────────────────────────────────────────────
+    level_configs = [
+        (high52,   "#6ee7b7", 1.0, "dash", f"52w High ${high52:,.2f}"),
+        (pivot,    "#06b6d4", 1.4, "dash", f"Pivot ${pivot:,.2f}"),
+        (current_price * 1.00, "#ffffff", 1.2, "dot", f"Last ${current_price:,.2f}"),
+        (stop_price, "#ef4444", 1.3, "dot", f"Stop ${stop_price:,.2f}"),
+        (target_2r,  "#22c55e", 1.0, "dashdot", f"2R ${target_2r:,.2f}"),
+        (target_3r,  "#86efac", 1.0, "dashdot", f"3R ${target_3r:,.2f}"),
+    ]
+    for y, color, width, dash, text in level_configs:
+        fig.add_hline(y=y, line=dict(color=color, width=width, dash=dash),
+                      annotation_text=text, annotation_position="right",
+                      annotation_font_size=11, row=1, col=1)
+
+    # ─── Highlight recent VCP / consolidation zone ────────────────
+    if d["is_vcp"] and len(df) >= 60:
+        recent = df.tail(60)
+        left  = recent.index[0]
+        right = recent.index[-1]
+        bottom = recent["Low"].min() * 0.98
+        top    = recent["High"].max() * 1.02
+        fig.add_shape(
+            type="rect",
+            x0=left, x1=right, y0=bottom, y1=top,
+            fillcolor="rgba(34,197,94,0.07)",
+            line=dict(color="rgba(34,197,94,0.4)", width=1, dash="dot"),
+            name="Recent VCP zone",
+            row=1, col=1
         )
 
-    # ── 4. Current price line ─────────────────────────────────
-    fig.add_hline(
-        y=d["price"], row=1, col=1,
-        line=dict(color="rgba(255,255,255,0.35)", width=1, dash="dot"),
-        annotation=dict(
-            text=f"  ${d['price']:.2f}",
-            font=dict(size=10, color="white", family="monospace"),
-            bgcolor="rgba(13,17,23,0.6)",
-            xref="paper", x=0,
-            xanchor="right"
-        )
-    )
-
-    # ── 5. Volume bars — green/red with 50MA line ─────────────
-    vol_colors = []
-    for i in range(len(df)):
-        if df["Close"].iloc[i] >= df["Open"].iloc[i]:
-            vol_colors.append("rgba(0,192,118,0.65)")
-        else:
-            vol_colors.append("rgba(255,77,77,0.65)")
-
-    fig.add_trace(go.Bar(
-        x=df.index, y=df["Volume"],
-        marker=dict(color=vol_colors, line=dict(width=0)),
-        name="Volume",
-        showlegend=False,
-        hovertemplate="Vol: %{y:,.0f}<extra></extra>"
-    ), row=2, col=1)
-
-    # Volume MA line
-    fig.add_trace(go.Scatter(
-        x=df.index, y=df["VolAvg50"],
-        name="Vol MA50",
-        line=dict(color="#f5c518", width=1.2, dash="solid"),
-        showlegend=False,
-        hovertemplate="VolMA50: %{y:,.0f}<extra></extra>"
-    ), row=2, col=1)
-
-    # ── 6. RS Line vs SMA200 ──────────────────────────────────
-    rs_line = df["Close"] / df["SMA200"]
-    rs_new_high = float(rs_line.iloc[-1]) >= float(rs_line.tail(60).max()) * 0.99
-    rs_color    = "#00c076" if rs_new_high else "#ab47bc"
-
-    fig.add_trace(go.Scatter(
-        x=df.index, y=rs_line,
-        name="RS Line",
-        line=dict(color=rs_color, width=1.5, shape="spline", smoothing=0.3),
-        fill="tozeroy",
-        fillcolor=f"rgba({','.join(str(int(rs_color.lstrip('#')[i:i+2], 16)) for i in (0,2,4))},0.08)",
-        showlegend=False,
-        hovertemplate="RS: %{y:.3f}<extra></extra>"
-    ), row=3, col=1)
-
-    # RS new high marker
-    if rs_new_high:
-        fig.add_annotation(
-            x=df.index[-1], y=float(rs_line.iloc[-1]),
-            text="★ RS NEW HIGH",
-            font=dict(size=9, color="#00c076", family="monospace"),
-            bgcolor="rgba(0,192,118,0.15)",
-            bordercolor="#00c076",
-            borderwidth=1,
-            showarrow=False,
-            row=3, col=1,
-            xanchor="right"
-        )
-
-    # ── 7. Layout — barchart-style dark pro theme ─────────────
-    fig.update_layout(
-        height=780,
-        paper_bgcolor="#0a0e17",
-        plot_bgcolor="#0a0e17",
-        font=dict(family="monospace, Consolas", size=11, color="#c9d1d9"),
-        margin=dict(t=55, b=10, l=65, r=120),
-        xaxis_rangeslider_visible=False,
-        hovermode="x unified",
-        hoverlabel=dict(
-            bgcolor="#161b22",
-            bordercolor="#30363d",
-            font=dict(family="monospace", size=11, color="#e6edf3")
-        ),
-        legend=dict(
-            orientation="h",
-            x=0, y=1.04,
-            bgcolor="rgba(0,0,0,0)",
-            font=dict(size=10, color="#8b949e"),
-            itemclick=False
-        ),
-        title=dict(
-            text=(
-                f"<b>{ticker}</b>  "
-                f"<span style='color:#8b949e'>|</span>  "
-                f"<b style='color:#00c076'>${d['price']:.2f}</b>  "
-                f"<span style='color:#8b949e'>|  TT: </span>"
-                f"<b style='color:#f5c518'>{d['tt_score']}/8</b>  "
-                f"<span style='color:#8b949e'>|  {d['stage_label']}  |  VCP: </span>"
-                f"<b style='color:#58a6ff'>{d['vcp_score']}/100</b>"
-            ),
-            font=dict(size=13, color="#e6edf3", family="monospace"),
-            x=0.01, xanchor="left"
-        )
-    )
-
-    # ── 8. Axes — subtle grid like barchart ───────────────────
-    axis_style = dict(
-        showgrid=True,
-        gridcolor="rgba(48,54,61,0.6)",
-        gridwidth=1,
-        zeroline=False,
-        showline=True,
-        linecolor="#30363d",
-        linewidth=1,
-        tickfont=dict(size=10, color="#8b949e", family="monospace"),
-        tickformat="$,.0f",
-    )
-
-    fig.update_yaxes(**axis_style, row=1, col=1)
-    fig.update_yaxes(
-        **{**axis_style, "tickformat": ".2s"},
-        title=dict(text="VOL", font=dict(size=9, color="#8b949e")),
+    # ─── Volume ───────────────────────────────────────────────────
+    colors = ["#4ade80" if c >= o else "#f87171" for c, o in zip(df["Close"], df["Open"])]
+    fig.add_trace(
+        go.Bar(x=df.index, y=df["Volume"], marker_color=colors, opacity=0.65, name="Volume"),
         row=2, col=1
     )
-    fig.update_yaxes(
-        **{**axis_style, "tickformat": ".3f"},
-        title=dict(text="RS", font=dict(size=9, color="#8b949e")),
+    fig.add_trace(
+        go.Scatter(x=df.index, y=df["VolAvg50"], name="50d Avg Vol",
+                   line=dict(color="#94a3b8", width=1.2, dash="dash")),
+        row=2, col=1
+    )
+
+    # ─── RS vs SMA200 ─────────────────────────────────────────────
+    rs = df["Close"] / df["SMA200"]
+    rs_color = "#4ade80" if rs.iloc[-1] > rs.max() * 0.98 else "#c084fc"
+    fig.add_trace(
+        go.Scatter(x=df.index, y=rs, name="RS vs SMA200",
+                   line=dict(color=rs_color, width=1.8)),
         row=3, col=1
     )
+    fig.add_hline(y=1.0, line=dict(color="#4b5563", width=1, dash="dot"), row=3, col=1)
 
-    x_axis_style = dict(
-        showgrid=False,
-        showline=True,
-        linecolor="#30363d",
-        tickfont=dict(size=10, color="#8b949e", family="monospace"),
-        rangeslider_visible=False,
+    # ─── ATR subplot (volatility context) ─────────────────────────
+    fig.add_trace(
+        go.Scatter(x=df.index, y=df["ATR"], name="14d ATR",
+                   line=dict(color="#fbbf24", width=1.6)),
+        row=4, col=1, secondary_y=False
     )
-    fig.update_xaxes(**x_axis_style)
+    fig.add_trace(
+        go.Scatter(x=df.index, y=df["ATR"] / df["Close"] * 100,
+                   name="ATR %", line=dict(color="#60a5fa", width=1.4, dash="dash")),
+        row=4, col=1, secondary_y=True
+    )
 
-    # Hide x-axis labels on top two panels
-    fig.update_xaxes(showticklabels=False, row=1, col=1)
-    fig.update_xaxes(showticklabels=False, row=2, col=1)
-
-    # Crosshair cursor
+    # ─── Layout & styling ─────────────────────────────────────────
     fig.update_layout(
-        xaxis=dict(showspikes=True, spikecolor="#444c56", spikethickness=1, spikedash="dot"),
-        xaxis2=dict(showspikes=True, spikecolor="#444c56", spikethickness=1, spikedash="dot"),
-        xaxis3=dict(showspikes=True, spikecolor="#444c56", spikethickness=1, spikedash="dot"),
-        yaxis=dict(showspikes=True, spikecolor="#444c56", spikethickness=1, spikedash="dot"),
+        height=880,
+        template="plotly_dark",
+        plot_bgcolor="#0f172a",
+        paper_bgcolor="#0f172a",
+        font=dict(color="#e2e8f0", family="Segoe UI, monospace"),
+        legend=dict(orientation="h", y=1.02, x=0.01, bgcolor="rgba(0,0,0,0.3)", font_size=10),
+        title=dict(
+            text=f"{ticker}  |  ${current_price:,.2f}  |  TT: {d['tt_score']}/8  |  {d['stage_label']}  |  VCP: {d['vcp_score']}/100",
+            font=dict(size=15, color="#60a5fa"),
+            x=0.01
+        ),
+        margin=dict(t=80, b=40, l=50, r=80),
+        hovermode="x unified",
+        xaxis_rangeslider_visible=False,
     )
+
+    fig.update_xaxes(showgrid=True, gridcolor="#1e293b", zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor="#1e293b", zeroline=False)
+
+    # nicer hover
+    fig.update_traces(hovertemplate="%{x|%b %-d, %Y}<br>Open: $%{open:,.2f}<br>High: $%{high:,.2f}<br>Low: $%{low:,.2f}<br>Close: $%{close:,.2f}<extra></extra>")
 
     return fig
 
@@ -695,7 +613,7 @@ def render_canslim_panel(cs, breakdown, cs_score, market_status, market_detail):
     # Market status badge
     css_class = {"Bull": "market-bull", "Bear": "market-bear"}.get(market_status, "market-neutral")
     st.markdown(
-        f'<div class="{css_class}">M — Market Direction: {market_status} &nbsp;|&nbsp; {market_detail}</div>',
+        f'<div class="{css_class}">M – Market Direction: {market_status} &nbsp;|&nbsp; {market_detail}</div>',
         unsafe_allow_html=True
     )
     st.markdown(f"### CAN SLIM Score: {cs_score}/7")
@@ -803,7 +721,7 @@ def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, cs_score, market_stat
     return msg.content[0].text
 
 
-# ── Sidebar ───────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## Risk Mandate")
     st.markdown("---")
@@ -838,7 +756,8 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-# ── Header ────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────────────────────
 st.markdown("# SEPA + CAN SLIM Institutional Terminal")
 st.markdown(
     "<p style='color:#8b949e;margin-top:-12px;'>"
@@ -849,7 +768,7 @@ st.markdown("---")
 
 tab_single, tab_scanner, tab_guide = st.tabs(["Single Stock", "Batch Scanner", "Guide"])
 
-# ── TAB 1: Single Stock ───────────────────────────────────────
+# ─── TAB 1: Single Stock ─────────────────────────────────────────────────────
 with tab_single:
     ticker_input = st.text_input("Enter Ticker", "NVDA", placeholder="e.g. NVDA, AAPL, MSFT").strip().upper()
 
@@ -981,7 +900,7 @@ with tab_single:
                         except Exception as e:
                             st.error(f"Claude error: {e}")
 
-# ── TAB 2: Batch Scanner ──────────────────────────────────────
+# ─── TAB 2: Batch Scanner ────────────────────────────────────────────────────
 with tab_scanner:
     st.markdown("### Batch SEPA + CAN SLIM Scanner")
     sc1, sc2, sc3 = st.columns(3)
@@ -1002,7 +921,7 @@ with tab_scanner:
 
     if st.button("Run Scan", type="primary", use_container_width=True):
         if require_bull and mkt_status != "Bull":
-            st.warning(f"Market is currently {mkt_status}. Bull filter is active — relaxing or disable 'Require Bull Market' to see results.")
+            st.warning(f"Market is currently {mkt_status}. Bull filter is active – relaxing or disable 'Require Bull Market' to see results.")
 
         if universe == "S&P 500":
             tickers = get_sp500()[:max_tickers]
@@ -1065,7 +984,7 @@ with tab_scanner:
                 ["CAN SLIM", "VCP Score"], ascending=False
             ).reset_index(drop=True)
             st.session_state["scan_results"] = df_r
-            st.success(f"Scan complete — {len(df_r)} setups found from {total} tickers. Market: {mkt_status}")
+            st.success(f"Scan complete – {len(df_r)} setups found from {total} tickers. Market: {mkt_status}")
 
     if "scan_results" in st.session_state:
         df_r = st.session_state["scan_results"]
@@ -1124,15 +1043,15 @@ with tab_scanner:
         if st.button("Deep Dive this ticker"):
             st.info(f"Go to the Single Stock tab and type: {dive_ticker}")
 
-# ── TAB 3: Guide ──────────────────────────────────────────────
+# ─── TAB 3: Guide ────────────────────────────────────────────────────────────
 with tab_guide:
     st.markdown("## SEPA + CAN SLIM Methodology Guide")
     st.markdown("""
 ### How To Use This Terminal
-1. **Single Stock tab** — full SEPA + CAN SLIM analysis on any ticker
-2. **Batch Scanner tab** — scan S&P 500 or Nasdaq 100 for combined setups
-3. **AI Mentor button** — Claude gives a Minervini + O'Neil verdict
-4. **Market Direction (sidebar)** — live SPY/QQQ trend via Alpaca API
+1. **Single Stock tab** – full SEPA + CAN SLIM analysis on any ticker
+2. **Batch Scanner tab** – scan S&P 500 or Nasdaq 100 for combined setups
+3. **AI Mentor button** – Claude gives a Minervini + O'Neil verdict
+4. **Market Direction (sidebar)** – live SPY/QQQ trend via Alpaca API
 
 ---
 
@@ -1157,14 +1076,14 @@ with tab_guide:
 | **S** | Supply & Demand | Float <500M, volume accumulation |
 | **L** | Leader vs Laggard | 1yr performance >20%, RS rank top 20% |
 | **I** | Institutional Sponsorship | 30–85% institutional ownership |
-| **M** | Market Direction | SPY + QQQ above 50MA, uptrending — via Alpaca |
+| **M** | Market Direction | SPY + QQQ above 50MA, uptrending – via Alpaca |
 
 ---
 
 ### Minervini SEPA Checklist
-- EPS accelerating — at least 2 consecutive quarters of growth
-- Revenue growing — ideally 20%+ YoY
-- Institutional accumulation — RS line making new highs
+- EPS accelerating – at least 2 consecutive quarters of growth
+- Revenue growing – ideally 20%+ YoY
+- Institutional accumulation – RS line making new highs
 - VCP forming on declining, dry volume
 - Entry exactly at the pivot on a volume surge
 - Market in a confirmed uptrend
@@ -1173,13 +1092,14 @@ with tab_guide:
 
 ### Key Rules
 - Cut losses at 7-8% without exception
-- Never average down — only add to winning positions
+- Never average down – only add to winning positions
 - Sell partial at 2R, let the rest run to 3R+
 - No volume on breakout = failed breakout, exit immediately
 - In a Bear market (M = Bear): reduce position sizes or go to cash
     """)
 
-# ── Chat Window ───────────────────────────────────────────────
+
+# ─── Chat Window ─────────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown("## Ask Claude")
 st.markdown(
@@ -1249,4 +1169,3 @@ if st.session_state["chat_history"]:
 
 st.divider()
 st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | SEPA + CAN SLIM | Alpaca Market Data")
-
