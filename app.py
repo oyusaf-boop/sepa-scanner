@@ -6,7 +6,10 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import anthropic
 import requests
+import gspread
+from google.oauth2.service_account import Credentials
 import time
+import json
 from datetime import datetime, timedelta
 
 st.set_page_config(
@@ -72,6 +75,29 @@ st.markdown("""
     .stTabs [aria-selected="true"] { color: #58a6ff !important; }
     [data-testid="stDivider"] hr { border-color: #21262d !important; border-width: 1px !important; opacity: 0.4; }
     footer { display: none !important; }
+    /* Fix chat input bottom bar */
+    [data-testid="stBottom"] {
+        background-color: #0d1117 !important;
+        border-top: 1px solid #21262d !important;
+    }
+    [data-testid="stBottom"] > div {
+        background-color: #0d1117 !important;
+    }
+    .stChatInput {
+        background-color: #0d1117 !important;
+        border-top: 1px solid #21262d !important;
+    }
+    .stChatInput textarea {
+        background-color: #161b22 !important;
+        color: #e6edf3 !important;
+        border: 1px solid #30363d !important;
+        border-radius: 8px !important;
+    }
+    /* Remove Streamlit's default bottom padding/border */
+    section[data-testid="stSidebar"] + section > div:last-child {
+        border-top: none !important;
+        box-shadow: none !important;
+    }
     .watchlist-row { background:#161b22; border:1px solid #30363d; border-radius:8px;
                      padding:10px 14px; margin:4px 0; }
     .verdict-history { background:#0d1117; border:1px solid #388bfd; border-radius:8px;
@@ -83,55 +109,185 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Watchlist & Verdict Memory (session_state backed) ────────
-def wl_load():
-    if "watchlist" not in st.session_state:
-        st.session_state["watchlist"] = {}   # {ticker: {note, date_added, verdict}}
-    return st.session_state["watchlist"]
+# ── Google Sheets Config ──────────────────────────────────────
+SHEET_ID = "1649nY1N0tbk7R0Ve_uZV0RBU22xqjmpKjhuVaJGSeUs"
+SCOPES   = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
-def wl_add(ticker, note="", verdict=""):
+@st.cache_resource
+def get_gsheet():
+    """Connect to Google Sheets using service account credentials from Streamlit secrets."""
+    try:
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        client = gspread.authorize(creds)
+        sh = client.open_by_key(SHEET_ID)
+
+        # Ensure worksheets exist
+        existing = [ws.title for ws in sh.worksheets()]
+        if "Watchlist" not in existing:
+            ws = sh.add_worksheet(title="Watchlist", rows=500, cols=10)
+            ws.append_row(["Ticker", "Note", "Date Added", "Verdict", "Price",
+                           "TT Score", "VCP Score", "CAN SLIM", "Stage", "Pivot"])
+        if "History" not in existing:
+            wh = sh.add_worksheet(title="History", rows=2000, cols=10)
+            wh.append_row(["Ticker", "Date", "Verdict", "Price", "Pivot",
+                           "TT Score", "VCP Score", "CAN SLIM Score", "Market", "Note"])
+        return sh
+    except Exception as e:
+        st.error(f"Google Sheets connection error: {e}")
+        return None
+
+
+# ── Watchlist: Google Sheets backed ──────────────────────────
+def wl_load():
+    """Load watchlist from Google Sheets into session_state cache."""
+    if "watchlist_loaded" not in st.session_state:
+        sh = get_gsheet()
+        if sh is None:
+            st.session_state["watchlist"] = {}
+            st.session_state["watchlist_loaded"] = True
+            return {}
+        try:
+            ws = sh.worksheet("Watchlist")
+            rows = ws.get_all_records()
+            wl = {}
+            for r in rows:
+                t = r.get("Ticker", "").strip().upper()
+                if t:
+                    wl[t] = {
+                        "note":       r.get("Note", ""),
+                        "date_added": r.get("Date Added", ""),
+                        "verdict":    r.get("Verdict", ""),
+                        "current_price":   r.get("Price", ""),
+                        "tt_score":        r.get("TT Score", ""),
+                        "vcp_score":       r.get("VCP Score", ""),
+                        "cs_score":        r.get("CAN SLIM", ""),
+                        "stage":           r.get("Stage", ""),
+                        "pivot":           r.get("Pivot", ""),
+                    }
+            st.session_state["watchlist"] = wl
+            st.session_state["watchlist_loaded"] = True
+        except Exception as e:
+            st.session_state["watchlist"] = {}
+            st.session_state["watchlist_loaded"] = True
+    return st.session_state.get("watchlist", {})
+
+
+def wl_add(ticker, note="", verdict="", price="", tt="", vcp="", cs="", stage="", pivot=""):
+    """Add ticker to watchlist in Google Sheets."""
+    sh = get_gsheet()
     wl = wl_load()
-    if ticker not in wl:
-        wl[ticker] = {
-            "note":       note,
-            "date_added": datetime.now().strftime("%Y-%m-%d"),
-            "verdict":    verdict,
-            "history":    []
-        }
-    else:
-        wl[ticker]["note"] = note
+    date_added = datetime.now().strftime("%Y-%m-%d")
+    if sh:
+        try:
+            ws = sh.worksheet("Watchlist")
+            # Check if ticker already exists and update, else append
+            existing_tickers = ws.col_values(1)
+            if ticker in existing_tickers:
+                row_idx = existing_tickers.index(ticker) + 1
+                ws.update(f"A{row_idx}:J{row_idx}",
+                          [[ticker, note, date_added, verdict, price, tt, vcp, cs, stage, pivot]])
+            else:
+                ws.append_row([ticker, note, date_added, verdict, price, tt, vcp, cs, stage, pivot])
+        except Exception as e:
+            st.error(f"Sheets write error: {e}")
+    # Update local cache
+    wl[ticker] = {
+        "note": note, "date_added": date_added, "verdict": verdict,
+        "current_price": price, "tt_score": tt, "vcp_score": vcp,
+        "cs_score": cs, "stage": stage, "pivot": pivot
+    }
     st.session_state["watchlist"] = wl
 
+
 def wl_remove(ticker):
+    """Remove ticker from watchlist in Google Sheets."""
+    sh = get_gsheet()
+    if sh:
+        try:
+            ws = sh.worksheet("Watchlist")
+            existing = ws.col_values(1)
+            if ticker in existing:
+                row_idx = existing.index(ticker) + 1
+                ws.delete_rows(row_idx)
+        except Exception as e:
+            st.error(f"Sheets delete error: {e}")
     wl = wl_load()
     wl.pop(ticker, None)
     st.session_state["watchlist"] = wl
 
-def vm_save(ticker, verdict, tt_score, vcp_score, cs_score, price, pivot):
-    """Save a verdict snapshot to ticker history."""
+
+def wl_refresh_cache():
+    """Force reload watchlist from Sheets."""
+    if "watchlist_loaded" in st.session_state:
+        del st.session_state["watchlist_loaded"]
+    if "watchlist" in st.session_state:
+        del st.session_state["watchlist"]
+
+
+# ── Verdict Memory: Google Sheets backed ─────────────────────
+def vm_save(ticker, verdict, tt_score, vcp_score, cs_score, price, pivot, market=""):
+    """Save verdict snapshot to History sheet."""
+    sh = get_gsheet()
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if sh:
+        try:
+            wh = sh.worksheet("History")
+            wh.append_row([ticker, date_str, verdict, price, pivot,
+                           tt_score, vcp_score, cs_score, market, ""])
+        except Exception as e:
+            st.error(f"History write error: {e}")
+    # Also update local verdict memory
     if "verdict_memory" not in st.session_state:
         st.session_state["verdict_memory"] = {}
     vm = st.session_state["verdict_memory"]
     if ticker not in vm:
         vm[ticker] = []
     vm[ticker].append({
-        "date":      datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "verdict":   verdict,
-        "tt":        tt_score,
-        "vcp":       vcp_score,
-        "canslim":   cs_score,
-        "price":     price,
-        "pivot":     pivot,
+        "date": date_str, "verdict": verdict, "tt": tt_score,
+        "vcp": vcp_score, "canslim": cs_score, "price": price, "pivot": pivot,
     })
-    # Keep last 10 entries per ticker
     vm[ticker] = vm[ticker][-10:]
     st.session_state["verdict_memory"] = vm
 
+
 def vm_get(ticker):
-    """Get verdict history for a ticker."""
-    if "verdict_memory" not in st.session_state:
+    """Get verdict history — first check session, then Sheets."""
+    # Check session cache first
+    if "verdict_memory" in st.session_state:
+        cached = st.session_state["verdict_memory"].get(ticker, [])
+        if cached:
+            return cached
+    # Fall back to Sheets
+    sh = get_gsheet()
+    if not sh:
         return []
-    return st.session_state["verdict_memory"].get(ticker, [])
+    try:
+        wh = sh.worksheet("History")
+        rows = wh.get_all_records()
+        history = []
+        for r in rows:
+            if r.get("Ticker", "").strip().upper() == ticker:
+                history.append({
+                    "date":    r.get("Date", ""),
+                    "verdict": r.get("Verdict", ""),
+                    "tt":      r.get("TT Score", ""),
+                    "vcp":     r.get("VCP Score", ""),
+                    "canslim": r.get("CAN SLIM Score", ""),
+                    "price":   r.get("Price", ""),
+                    "pivot":   r.get("Pivot", ""),
+                })
+        # Cache in session
+        if "verdict_memory" not in st.session_state:
+            st.session_state["verdict_memory"] = {}
+        st.session_state["verdict_memory"][ticker] = history[-10:]
+        return history
+    except Exception:
+        return []
+
 
 def vm_compare(ticker, current_verdict):
     """Compare current verdict vs last saved verdict."""
@@ -910,7 +1066,7 @@ with tab_single:
                             )
                             # Auto-save verdict to memory when AI analysis is run
                             vm_save(ticker_input, verdict_text, d["tt_score"],
-                                    d["vcp_score"], cs_score, d["price"], d["pivot"])
+                                    d["vcp_score"], cs_score, d["price"], d["pivot"], mkt_status)
                             st.markdown(
                                 f'<div class="ai-box">{commentary}</div>',
                                 unsafe_allow_html=True
@@ -939,9 +1095,11 @@ with tab_single:
                         st.rerun()
                 else:
                     if st.button("⭐ Add to Watchlist", key="wl_add"):
-                        wl_add(ticker_input, wl_note, verdict_text)
+                        wl_add(ticker_input, wl_note, verdict_text,
+                               d["price"], d["tt_score"], d["vcp_score"],
+                               cs_score, d["stage_label"], d["pivot"])
                         vm_save(ticker_input, verdict_text, d["tt_score"],
-                                d["vcp_score"], cs_score, d["price"], d["pivot"])
+                                d["vcp_score"], cs_score, d["price"], d["pivot"], mkt_status)
                         st.rerun()
 
             # Show verdict history for this ticker
@@ -1117,23 +1275,19 @@ with tab_watchlist:
     else:
         # Quick re-scan watchlist
         if st.button("🔄 Refresh All Watchlist Data", type="primary"):
-            with st.spinner("Refreshing watchlist..."):
+            with st.spinner("Refreshing watchlist from Google Sheets..."):
+                wl_refresh_cache()
+                wl = wl_load()
                 for t in list(wl.keys()):
                     d_wl = fetch_data(t)
                     cs_wl = get_canslim_fundamentals(t)
                     cs_score_wl, _ = canslim_score(cs_wl, mkt_status)
                     if d_wl:
                         new_verdict, _ = get_verdict(d_wl, cs_score_wl)
-                        wl[t]["current_price"]  = d_wl["price"]
-                        wl[t]["current_verdict"] = new_verdict
-                        wl[t]["tt_score"]        = d_wl["tt_score"]
-                        wl[t]["vcp_score"]        = d_wl["vcp_score"]
-                        wl[t]["cs_score"]         = cs_score_wl
-                        wl[t]["stage"]            = d_wl["stage_label"]
-                        wl[t]["pivot"]            = d_wl["pivot"]
-                        wl[t]["pct_to_pivot"]     = d_wl["pct_to_pivot"]
-                st.session_state["watchlist"] = wl
-            st.success("Watchlist refreshed!")
+                        wl_add(t, wl[t].get("note",""), new_verdict,
+                               d_wl["price"], d_wl["tt_score"], d_wl["vcp_score"],
+                               cs_score_wl, d_wl["stage_label"], d_wl["pivot"])
+            st.success("Watchlist refreshed and saved to Google Sheets!")
             st.rerun()
 
         st.markdown("---")
@@ -1316,3 +1470,4 @@ if st.session_state["chat_history"]:
 
 st.divider()
 st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | SEPA + CAN SLIM | Alpaca Market Data")
+
