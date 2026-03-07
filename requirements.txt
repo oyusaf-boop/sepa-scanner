@@ -6,3 +6,5 @@ plotly
 anthropic
 lxml
 html5lib
+gspread
+google-auth
