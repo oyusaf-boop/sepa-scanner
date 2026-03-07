@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 st.set_page_config(
     page_title="SEPA Institutional Terminal",
-    page_icon="🖥️",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -70,11 +70,81 @@ st.markdown("""
     hr { border-color: #30363d; }
     .stTabs [data-baseweb="tab"] { color: #8b949e; }
     .stTabs [aria-selected="true"] { color: #58a6ff !important; }
+    [data-testid="stDivider"] hr { border-color: #21262d !important; border-width: 1px !important; opacity: 0.4; }
+    footer { display: none !important; }
+    .watchlist-row { background:#161b22; border:1px solid #30363d; border-radius:8px;
+                     padding:10px 14px; margin:4px 0; }
+    .verdict-history { background:#0d1117; border:1px solid #388bfd; border-radius:8px;
+                       padding:12px 16px; margin:6px 0; font-family:monospace; font-size:12px; }
+    .verdict-changed-buy  { color:#3fb950; font-weight:bold; }
+    .verdict-changed-wait { color:#d29922; font-weight:bold; }
+    .verdict-changed-avoid{ color:#f85149; font-weight:bold; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ── Watchlist & Verdict Memory (session_state backed) ────────
+def wl_load():
+    if "watchlist" not in st.session_state:
+        st.session_state["watchlist"] = {}   # {ticker: {note, date_added, verdict}}
+    return st.session_state["watchlist"]
+
+def wl_add(ticker, note="", verdict=""):
+    wl = wl_load()
+    if ticker not in wl:
+        wl[ticker] = {
+            "note":       note,
+            "date_added": datetime.now().strftime("%Y-%m-%d"),
+            "verdict":    verdict,
+            "history":    []
+        }
+    else:
+        wl[ticker]["note"] = note
+    st.session_state["watchlist"] = wl
+
+def wl_remove(ticker):
+    wl = wl_load()
+    wl.pop(ticker, None)
+    st.session_state["watchlist"] = wl
+
+def vm_save(ticker, verdict, tt_score, vcp_score, cs_score, price, pivot):
+    """Save a verdict snapshot to ticker history."""
+    if "verdict_memory" not in st.session_state:
+        st.session_state["verdict_memory"] = {}
+    vm = st.session_state["verdict_memory"]
+    if ticker not in vm:
+        vm[ticker] = []
+    vm[ticker].append({
+        "date":      datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "verdict":   verdict,
+        "tt":        tt_score,
+        "vcp":       vcp_score,
+        "canslim":   cs_score,
+        "price":     price,
+        "pivot":     pivot,
+    })
+    # Keep last 10 entries per ticker
+    vm[ticker] = vm[ticker][-10:]
+    st.session_state["verdict_memory"] = vm
+
+def vm_get(ticker):
+    """Get verdict history for a ticker."""
+    if "verdict_memory" not in st.session_state:
+        return []
+    return st.session_state["verdict_memory"].get(ticker, [])
+
+def vm_compare(ticker, current_verdict):
+    """Compare current verdict vs last saved verdict."""
+    history = vm_get(ticker)
+    if not history:
+        return None
+    last = history[-1]
+    if last["verdict"] != current_verdict:
+        return last
+    return None
+
+
+# ── Alpaca Config ─────────────────────────────────────────────
 ALPACA_KEY    = "AKSCP2RBJMBNI5ZBNEP2ATEYX4"
 ALPACA_SECRET = "3wywDhe8hL1VKeoT5AtsBdeprFxoH1McJ6gPC7E2Gu9h"
 ALPACA_BASE   = "https://api.alpaca.markets"
@@ -92,7 +162,7 @@ def get_claude():
     return anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
 
 
-# ─── Alpaca: Market Direction (M in CAN SLIM) ────────────────────────────────
+# ── Alpaca: Market Direction (M in CAN SLIM) ──────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_market_direction():
     """
@@ -170,7 +240,7 @@ def get_market_direction():
         return "Unknown", {}, str(e)
 
 
-# ─── yfinance: Full CAN SLIM fundamentals ────────────────────────────────────
+# ── yfinance: Full CAN SLIM fundamentals ──────────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_canslim_fundamentals(ticker):
     """
@@ -181,7 +251,7 @@ def get_canslim_fundamentals(ticker):
         stock = yf.Ticker(ticker)
         info  = stock.info
 
-        # ─── C: Current Quarter EPS growth ───────────────────────────────────────
+        # ── C: Current Quarter EPS growth ────────────────────
         # Pull quarterly earnings
         try:
             qe = stock.quarterly_earnings
@@ -210,7 +280,7 @@ def get_canslim_fundamentals(ticker):
 
         c_pass = bool(c_eps_growth >= 0.25)
 
-        # ─── A: Annual EPS growth ────────────────────────────────────────────────
+        # ── A: Annual EPS growth ──────────────────────────────
         try:
             ae = stock.earnings  # annual
             if ae is not None and len(ae) >= 2:
@@ -232,13 +302,13 @@ def get_canslim_fundamentals(ticker):
 
         a_pass = bool(a_avg_growth >= 0.25)
 
-        # ─── N: New High / Near 52-week high ─────────────────────────────────────
+        # ── N: New High / Near 52-week high ───────────────────
         price   = float(info.get("currentPrice", info.get("regularMarketPrice", 0)) or 0)
         high52  = float(info.get("fiftyTwoWeekHigh", 0) or 0)
         n_pass  = bool(high52 > 0 and price >= high52 * 0.85)
         n_pct   = round((price / high52 - 1) * 100, 1) if high52 > 0 else 0.0
 
-        # ─── S: Supply/Demand – float & accumulation ─────────────────────────────
+        # ── S: Supply/Demand — float & accumulation ───────────
         float_shares = float(info.get("floatShares", 0) or 0)
         avg_vol      = float(info.get("averageVolume", 0) or 0)
         avg_vol10    = float(info.get("averageVolume10days", 0) or 0)
@@ -248,7 +318,7 @@ def get_canslim_fundamentals(ticker):
         s_float_ok = bool(0 < float_shares < 500_000_000)
         s_pass = bool(s_accum or s_float_ok)
 
-        # ─── L: Leader – RS (relative strength) ──────────────────────────────────
+        # ── L: Leader — RS (relative strength) ───────────────
         # We use RS rating proxy: 1yr price performance
         try:
             hist = stock.history(period="1y")
@@ -261,7 +331,7 @@ def get_canslim_fundamentals(ticker):
         # Leader = outperforming (proxy: >20% 1yr gain)
         l_pass = bool(l_perf_1yr > 20)
 
-        # ─── I: Institutional Sponsorship ────────────────────────────────────────
+        # ── I: Institutional Sponsorship ─────────────────────
         inst_own   = float(info.get("institutionalOwnershipPercentage",
                           info.get("heldPercentInstitutions", 0)) or 0)
         # Acceptable range: 30-80% (too high = overcrowded)
@@ -469,138 +539,68 @@ def get_verdict(d, cs_score=0):
 
 
 def make_chart(d, ticker, stop_price, target_2r, target_3r):
-    df = d["df"].tail(180).copy()          # last ~6 months
-    current_price = d["price"]
-    pivot        = d["pivot"]
-    high52       = d["high52"]
-    low52        = d["low52"]
-
+    df = d["df"].tail(180)
     fig = make_subplots(
-        rows=4, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.04,
-        row_heights=[0.58, 0.15, 0.15, 0.12],
-        subplot_titles=("", "Volume", "Relative Strength vs SMA200", "ATR / Volatility"),
-        specs=[[{"secondary_y": False}], [{"secondary_y": False}], [{"secondary_y": False}], [{"secondary_y": True}]]
+        rows=3, cols=1, shared_xaxes=True,
+        vertical_spacing=0.03,
+        row_heights=[0.60, 0.20, 0.20],
+        subplot_titles=("", "Volume", "RS vs SMA200")
     )
-
-    # ─── Main Candlestick ────────────────────────────────────────
-    fig.add_trace(
-        go.Candlestick(
-            x=df.index,
-            open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
-            increasing_line_color="#4ade80", increasing_fillcolor="rgba(74,222,128,0.18)",
-            decreasing_line_color="#f87171", decreasing_fillcolor="rgba(248,113,113,0.18)",
-            line=dict(width=1.1),
-            name="Price"
-        ),
-        row=1, col=1
-    )
-
-    # ─── Moving Averages ──────────────────────────────────────────
-    ma_configs = [
-        ("SMA10",  "#eab308", 1.0, "SMA10"),
-        ("SMA20",  "#84cc16", 1.1, "SMA20"),
-        ("SMA50",  "#facc15", 1.4, "SMA50"),
-        ("SMA150", "#fb923c", 1.6, "SMA150"),
-        ("SMA200", "#e11d48", 2.0, "SMA200"),
-    ]
-    for col, color, width, name in ma_configs:
-        if col in df.columns:
-            fig.add_trace(
-                go.Scatter(x=df.index, y=df[col], name=name,
-                           line=dict(color=color, width=width)),
-                row=1, col=1
-            )
-
-    # ─── Key Levels ───────────────────────────────────────────────
-    level_configs = [
-        (high52,   "#6ee7b7", 1.0, "dash", f"52w High ${high52:,.2f}"),
-        (pivot,    "#06b6d4", 1.4, "dash", f"Pivot ${pivot:,.2f}"),
-        (current_price * 1.00, "#ffffff", 1.2, "dot", f"Last ${current_price:,.2f}"),
-        (stop_price, "#ef4444", 1.3, "dot", f"Stop ${stop_price:,.2f}"),
-        (target_2r,  "#22c55e", 1.0, "dashdot", f"2R ${target_2r:,.2f}"),
-        (target_3r,  "#86efac", 1.0, "dashdot", f"3R ${target_3r:,.2f}"),
-    ]
-    for y, color, width, dash, text in level_configs:
-        fig.add_hline(y=y, line=dict(color=color, width=width, dash=dash),
-                      annotation_text=text, annotation_position="right",
-                      annotation_font_size=11, row=1, col=1)
-
-    # ─── Highlight recent VCP / consolidation zone ────────────────
-    if d["is_vcp"] and len(df) >= 60:
-        recent = df.tail(60)
-        left  = recent.index[0]
-        right = recent.index[-1]
-        bottom = recent["Low"].min() * 0.98
-        top    = recent["High"].max() * 1.02
-        fig.add_shape(
-            type="rect",
-            x0=left, x1=right, y0=bottom, y1=top,
-            fillcolor="rgba(34,197,94,0.07)",
-            line=dict(color="rgba(34,197,94,0.4)", width=1, dash="dot"),
-            name="Recent VCP zone",
-            row=1, col=1
-        )
-
-    # ─── Volume ───────────────────────────────────────────────────
-    colors = ["#4ade80" if c >= o else "#f87171" for c, o in zip(df["Close"], df["Open"])]
-    fig.add_trace(
-        go.Bar(x=df.index, y=df["Volume"], marker_color=colors, opacity=0.65, name="Volume"),
-        row=2, col=1
-    )
-    fig.add_trace(
-        go.Scatter(x=df.index, y=df["VolAvg50"], name="50d Avg Vol",
-                   line=dict(color="#94a3b8", width=1.2, dash="dash")),
-        row=2, col=1
-    )
-
-    # ─── RS vs SMA200 ─────────────────────────────────────────────
-    rs = df["Close"] / df["SMA200"]
-    rs_color = "#4ade80" if rs.iloc[-1] > rs.max() * 0.98 else "#c084fc"
-    fig.add_trace(
-        go.Scatter(x=df.index, y=rs, name="RS vs SMA200",
-                   line=dict(color=rs_color, width=1.8)),
-        row=3, col=1
-    )
-    fig.add_hline(y=1.0, line=dict(color="#4b5563", width=1, dash="dot"), row=3, col=1)
-
-    # ─── ATR subplot (volatility context) ─────────────────────────
-    fig.add_trace(
-        go.Scatter(x=df.index, y=df["ATR"], name="14d ATR",
-                   line=dict(color="#fbbf24", width=1.6)),
-        row=4, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Scatter(x=df.index, y=df["ATR"] / df["Close"] * 100,
-                   name="ATR %", line=dict(color="#60a5fa", width=1.4, dash="dash")),
-        row=4, col=1, secondary_y=True
-    )
-
-    # ─── Layout & styling ─────────────────────────────────────────
+    fig.add_trace(go.Candlestick(
+        x=df.index, open=df["Open"], high=df["High"],
+        low=df["Low"], close=df["Close"],
+        increasing_line_color="#26a69a", decreasing_line_color="#ef5350",
+        name="Price"
+    ), row=1, col=1)
+    for col, color, width, name in [
+        ("SMA50",  "#ffd700", 1.2, "SMA50"),
+        ("SMA150", "#ff9800", 1.2, "SMA150"),
+        ("SMA200", "#e91e63", 1.8, "SMA200"),
+    ]:
+        fig.add_trace(go.Scatter(
+            x=df.index, y=df[col], name=name,
+            line=dict(color=color, width=width)
+        ), row=1, col=1)
+    fig.add_hline(y=d["pivot"],  line=dict(color="#00e5ff", width=1.5, dash="dash"),
+                  annotation_text=f"Pivot ${d['pivot']:.2f}", row=1, col=1)
+    fig.add_hline(y=stop_price,  line=dict(color="#f85149", width=1.2, dash="dot"),
+                  annotation_text=f"Stop ${stop_price:.2f}", row=1, col=1)
+    fig.add_hline(y=target_2r,   line=dict(color="#3fb950", width=1.0, dash="dashdot"),
+                  annotation_text=f"2R ${target_2r:.2f}", row=1, col=1)
+    fig.add_hline(y=target_3r,   line=dict(color="#b9f6ca", width=1.0, dash="dashdot"),
+                  annotation_text=f"3R ${target_3r:.2f}", row=1, col=1)
+    colors = ["#26a69a" if c >= o else "#ef5350"
+              for c, o in zip(df["Close"], df["Open"])]
+    fig.add_trace(go.Bar(
+        x=df.index, y=df["Volume"], marker_color=colors,
+        opacity=0.75, name="Volume"
+    ), row=2, col=1)
+    fig.add_trace(go.Scatter(
+        x=df.index, y=df["VolAvg50"], name="VolAvg50",
+        line=dict(color="white", width=1, dash="dash")
+    ), row=2, col=1)
+    rs_line  = df["Close"] / df["SMA200"]
+    rs_color = "#3fb950" if float(rs_line.iloc[-1]) >= float(rs_line.tail(20).max()) * 0.99 else "#ab47bc"
+    fig.add_trace(go.Scatter(
+        x=df.index, y=rs_line, name="RS vs SMA200",
+        line=dict(color=rs_color, width=1.5)
+    ), row=3, col=1)
     fig.update_layout(
-        height=880,
-        template="plotly_dark",
-        plot_bgcolor="#0f172a",
-        paper_bgcolor="#0f172a",
-        font=dict(color="#e2e8f0", family="Segoe UI, monospace"),
-        legend=dict(orientation="h", y=1.02, x=0.01, bgcolor="rgba(0,0,0,0.3)", font_size=10),
-        title=dict(
-            text=f"{ticker}  |  ${current_price:,.2f}  |  TT: {d['tt_score']}/8  |  {d['stage_label']}  |  VCP: {d['vcp_score']}/100",
-            font=dict(size=15, color="#60a5fa"),
-            x=0.01
-        ),
-        margin=dict(t=80, b=40, l=50, r=80),
-        hovermode="x unified",
+        height=720, template="plotly_dark",
+        plot_bgcolor="#0d1117", paper_bgcolor="#0d1117",
+        font=dict(color="#e6edf3"),
+        legend=dict(orientation="h", y=1.02, x=0,
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
         xaxis_rangeslider_visible=False,
+        title=dict(
+            text=f"{ticker} | ${d['price']:.2f} | TT: {d['tt_score']}/8 | "
+                 f"{d['stage_label']} | VCP: {d['vcp_score']}/100",
+            font=dict(size=13, color="#58a6ff")
+        ),
+        margin=dict(t=60, b=20, l=50, r=80)
     )
-
-    fig.update_xaxes(showgrid=True, gridcolor="#1e293b", zeroline=False)
-    fig.update_yaxes(showgrid=True, gridcolor="#1e293b", zeroline=False)
-
-    # nicer hover
-    fig.update_traces(hovertemplate="%{x|%b %-d, %Y}<br>Open: $%{open:,.2f}<br>High: $%{high:,.2f}<br>Low: $%{low:,.2f}<br>Close: $%{close:,.2f}<extra></extra>")
-
+    fig.update_xaxes(showgrid=True, gridcolor="#21262d")
+    fig.update_yaxes(showgrid=True, gridcolor="#21262d")
     return fig
 
 
@@ -613,7 +613,7 @@ def render_canslim_panel(cs, breakdown, cs_score, market_status, market_detail):
     # Market status badge
     css_class = {"Bull": "market-bull", "Bear": "market-bear"}.get(market_status, "market-neutral")
     st.markdown(
-        f'<div class="{css_class}">M – Market Direction: {market_status} &nbsp;|&nbsp; {market_detail}</div>',
+        f'<div class="{css_class}">M — Market Direction: {market_status} &nbsp;|&nbsp; {market_detail}</div>',
         unsafe_allow_html=True
     )
     st.markdown(f"### CAN SLIM Score: {cs_score}/7")
@@ -721,7 +721,7 @@ def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, cs_score, market_stat
     return msg.content[0].text
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## Risk Mandate")
     st.markdown("---")
@@ -756,8 +756,7 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-
-# ──────────────────────────────────────────────────────────────────────────────
+# ── Header ────────────────────────────────────────────────────
 st.markdown("# SEPA + CAN SLIM Institutional Terminal")
 st.markdown(
     "<p style='color:#8b949e;margin-top:-12px;'>"
@@ -766,9 +765,9 @@ st.markdown(
 )
 st.markdown("---")
 
-tab_single, tab_scanner, tab_guide = st.tabs(["Single Stock", "Batch Scanner", "Guide"])
+tab_single, tab_scanner, tab_watchlist, tab_guide = st.tabs(["Single Stock", "Batch Scanner", "⭐ Watchlist", "Guide"])
 
-# ─── TAB 1: Single Stock ─────────────────────────────────────────────────────
+# ── TAB 1: Single Stock ───────────────────────────────────────
 with tab_single:
     ticker_input = st.text_input("Enter Ticker", "NVDA", placeholder="e.g. NVDA, AAPL, MSFT").strip().upper()
 
@@ -788,6 +787,22 @@ with tab_single:
                 f'<div class="verdict-box verdict-{verdict_class}">{verdict_text}</div>',
                 unsafe_allow_html=True
             )
+
+            # ── Verdict history comparison ────────────────────
+            prior = vm_compare(ticker_input, verdict_text)
+            if prior:
+                delta_color = "verdict-changed-buy" if "BUY" in verdict_text else \
+                              "verdict-changed-wait" if "WAIT" in verdict_text else \
+                              "verdict-changed-avoid"
+                st.markdown(
+                    f'<div class="verdict-history">'
+                    f'🔄 <strong>Verdict changed since last analysis</strong><br>'
+                    f'<span style="color:#8b949e;">Last checked {prior["date"]}: '
+                    f'{prior["verdict"]} | Price ${prior["price"]} | TT {prior["tt"]}/8 | VCP {prior["vcp"]}</span><br>'
+                    f'<span class="{delta_color}">Now: {verdict_text}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
 
             c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
             c1.metric("Price",          f"${d['price']:.2f}")
@@ -893,14 +908,63 @@ with tab_single:
                                 ticker_input, d, stop_price, target_2r, target_3r,
                                 shares, cs, cs_score, mkt_status
                             )
+                            # Auto-save verdict to memory when AI analysis is run
+                            vm_save(ticker_input, verdict_text, d["tt_score"],
+                                    d["vcp_score"], cs_score, d["price"], d["pivot"])
                             st.markdown(
                                 f'<div class="ai-box">{commentary}</div>',
                                 unsafe_allow_html=True
                             )
+                            st.success(f"✅ Verdict saved to memory for {ticker_input} — revisit later to see if setup has changed.")
                         except Exception as e:
                             st.error(f"Claude error: {e}")
 
-# ─── TAB 2: Batch Scanner ────────────────────────────────────────────────────
+            # ── Watchlist controls ────────────────────────────
+            st.markdown("---")
+            wl = wl_load()
+            in_watchlist = ticker_input in wl
+            wl_col1, wl_col2 = st.columns([3, 1])
+            with wl_col1:
+                wl_note = st.text_input(
+                    "Watchlist note (optional)",
+                    value=wl.get(ticker_input, {}).get("note", ""),
+                    placeholder="e.g. Waiting for VCP confirmation, earnings next week...",
+                    key="wl_note"
+                )
+            with wl_col2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if in_watchlist:
+                    if st.button("✅ In Watchlist — Remove", key="wl_remove"):
+                        wl_remove(ticker_input)
+                        st.rerun()
+                else:
+                    if st.button("⭐ Add to Watchlist", key="wl_add"):
+                        wl_add(ticker_input, wl_note, verdict_text)
+                        vm_save(ticker_input, verdict_text, d["tt_score"],
+                                d["vcp_score"], cs_score, d["price"], d["pivot"])
+                        st.rerun()
+
+            # Show verdict history for this ticker
+            history = vm_get(ticker_input)
+            if len(history) > 1:
+                with st.expander(f"📋 Verdict History for {ticker_input} ({len(history)} entries)"):
+                    for entry in reversed(history):
+                        v_cls = "verdict-changed-buy" if "BUY" in entry["verdict"] else \
+                                "verdict-changed-wait" if "WAIT" in entry["verdict"] else \
+                                "verdict-changed-avoid"
+                        st.markdown(
+                            f'<div class="verdict-history">'
+                            f'<span style="color:#8b949e;">{entry["date"]}</span> &nbsp;|&nbsp; '
+                            f'Price: <strong>${entry["price"]}</strong> &nbsp;|&nbsp; '
+                            f'TT: {entry["tt"]}/8 &nbsp;|&nbsp; '
+                            f'VCP: {entry["vcp"]} &nbsp;|&nbsp; '
+                            f'CAN SLIM: {entry["canslim"]}/7<br>'
+                            f'<span class="{v_cls}">{entry["verdict"]}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+# ── TAB 2: Batch Scanner ──────────────────────────────────────
 with tab_scanner:
     st.markdown("### Batch SEPA + CAN SLIM Scanner")
     sc1, sc2, sc3 = st.columns(3)
@@ -921,7 +985,7 @@ with tab_scanner:
 
     if st.button("Run Scan", type="primary", use_container_width=True):
         if require_bull and mkt_status != "Bull":
-            st.warning(f"Market is currently {mkt_status}. Bull filter is active – relaxing or disable 'Require Bull Market' to see results.")
+            st.warning(f"Market is currently {mkt_status}. Bull filter is active — relaxing or disable 'Require Bull Market' to see results.")
 
         if universe == "S&P 500":
             tickers = get_sp500()[:max_tickers]
@@ -984,7 +1048,7 @@ with tab_scanner:
                 ["CAN SLIM", "VCP Score"], ascending=False
             ).reset_index(drop=True)
             st.session_state["scan_results"] = df_r
-            st.success(f"Scan complete – {len(df_r)} setups found from {total} tickers. Market: {mkt_status}")
+            st.success(f"Scan complete — {len(df_r)} setups found from {total} tickers. Market: {mkt_status}")
 
     if "scan_results" in st.session_state:
         df_r = st.session_state["scan_results"]
@@ -1043,15 +1107,99 @@ with tab_scanner:
         if st.button("Deep Dive this ticker"):
             st.info(f"Go to the Single Stock tab and type: {dive_ticker}")
 
-# ─── TAB 3: Guide ────────────────────────────────────────────────────────────
+# ── TAB 3: Watchlist ──────────────────────────────────────────
+with tab_watchlist:
+    st.markdown("### ⭐ My Watchlist")
+    wl = wl_load()
+
+    if not wl:
+        st.info("No tickers in your watchlist yet. Go to Single Stock tab, analyze a ticker, and click '⭐ Add to Watchlist'.")
+    else:
+        # Quick re-scan watchlist
+        if st.button("🔄 Refresh All Watchlist Data", type="primary"):
+            with st.spinner("Refreshing watchlist..."):
+                for t in list(wl.keys()):
+                    d_wl = fetch_data(t)
+                    cs_wl = get_canslim_fundamentals(t)
+                    cs_score_wl, _ = canslim_score(cs_wl, mkt_status)
+                    if d_wl:
+                        new_verdict, _ = get_verdict(d_wl, cs_score_wl)
+                        wl[t]["current_price"]  = d_wl["price"]
+                        wl[t]["current_verdict"] = new_verdict
+                        wl[t]["tt_score"]        = d_wl["tt_score"]
+                        wl[t]["vcp_score"]        = d_wl["vcp_score"]
+                        wl[t]["cs_score"]         = cs_score_wl
+                        wl[t]["stage"]            = d_wl["stage_label"]
+                        wl[t]["pivot"]            = d_wl["pivot"]
+                        wl[t]["pct_to_pivot"]     = d_wl["pct_to_pivot"]
+                st.session_state["watchlist"] = wl
+            st.success("Watchlist refreshed!")
+            st.rerun()
+
+        st.markdown("---")
+
+        for ticker, data in wl.items():
+            history = vm_get(ticker)
+            current_verdict = data.get("current_verdict", data.get("verdict", "—"))
+            original_verdict = history[0]["verdict"] if history else data.get("verdict", "—")
+
+            # Detect verdict change
+            verdict_changed = len(history) >= 2 and history[-1]["verdict"] != history[-2]["verdict"]
+            change_badge = " 🔔 **VERDICT CHANGED**" if verdict_changed else ""
+
+            with st.expander(
+                f"**{ticker}** — {current_verdict}{change_badge} | "
+                f"Added: {data['date_added']}",
+                expanded=verdict_changed
+            ):
+                wl_c1, wl_c2, wl_c3, wl_c4, wl_c5 = st.columns(5)
+                wl_c1.metric("Price",     f"${data.get('current_price', '—')}")
+                wl_c2.metric("TT Score",  f"{data.get('tt_score', '—')}/8")
+                wl_c3.metric("VCP Score", f"{data.get('vcp_score', '—')}")
+                wl_c4.metric("CAN SLIM",  f"{data.get('cs_score', '—')}/7")
+                wl_c5.metric("% to Pivot",f"{data.get('pct_to_pivot', '—')}%")
+
+                if data.get("note"):
+                    st.markdown(f"📝 **Note:** {data['note']}")
+
+                # Verdict history
+                if history:
+                    st.markdown("**Verdict History:**")
+                    for entry in reversed(history[-5:]):
+                        v_cls = "verdict-changed-buy" if "BUY" in entry["verdict"] else \
+                                "verdict-changed-wait" if "WAIT" in entry["verdict"] else \
+                                "verdict-changed-avoid"
+                        st.markdown(
+                            f'<div class="verdict-history">'
+                            f'<span style="color:#8b949e;">{entry["date"]}</span> &nbsp;|&nbsp; '
+                            f'${entry["price"]} &nbsp;|&nbsp; TT:{entry["tt"]} VCP:{entry["vcp"]} CS:{entry["canslim"]}/7<br>'
+                            f'<span class="{v_cls}">{entry["verdict"]}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                # Update note + remove button
+                nc1, nc2 = st.columns([4, 1])
+                with nc1:
+                    new_note = st.text_input("Update note", value=data.get("note",""),
+                                             key=f"note_{ticker}")
+                with nc2:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("Remove", key=f"rm_{ticker}"):
+                        wl_remove(ticker)
+                        st.rerun()
+                if new_note != data.get("note",""):
+                    wl[ticker]["note"] = new_note
+                    st.session_state["watchlist"] = wl
+
 with tab_guide:
     st.markdown("## SEPA + CAN SLIM Methodology Guide")
     st.markdown("""
 ### How To Use This Terminal
-1. **Single Stock tab** – full SEPA + CAN SLIM analysis on any ticker
-2. **Batch Scanner tab** – scan S&P 500 or Nasdaq 100 for combined setups
-3. **AI Mentor button** – Claude gives a Minervini + O'Neil verdict
-4. **Market Direction (sidebar)** – live SPY/QQQ trend via Alpaca API
+1. **Single Stock tab** — full SEPA + CAN SLIM analysis on any ticker
+2. **Batch Scanner tab** — scan S&P 500 or Nasdaq 100 for combined setups
+3. **AI Mentor button** — Claude gives a Minervini + O'Neil verdict
+4. **Market Direction (sidebar)** — live SPY/QQQ trend via Alpaca API
 
 ---
 
@@ -1076,14 +1224,14 @@ with tab_guide:
 | **S** | Supply & Demand | Float <500M, volume accumulation |
 | **L** | Leader vs Laggard | 1yr performance >20%, RS rank top 20% |
 | **I** | Institutional Sponsorship | 30–85% institutional ownership |
-| **M** | Market Direction | SPY + QQQ above 50MA, uptrending – via Alpaca |
+| **M** | Market Direction | SPY + QQQ above 50MA, uptrending — via Alpaca |
 
 ---
 
 ### Minervini SEPA Checklist
-- EPS accelerating – at least 2 consecutive quarters of growth
-- Revenue growing – ideally 20%+ YoY
-- Institutional accumulation – RS line making new highs
+- EPS accelerating — at least 2 consecutive quarters of growth
+- Revenue growing — ideally 20%+ YoY
+- Institutional accumulation — RS line making new highs
 - VCP forming on declining, dry volume
 - Entry exactly at the pivot on a volume surge
 - Market in a confirmed uptrend
@@ -1092,14 +1240,13 @@ with tab_guide:
 
 ### Key Rules
 - Cut losses at 7-8% without exception
-- Never average down – only add to winning positions
+- Never average down — only add to winning positions
 - Sell partial at 2R, let the rest run to 3R+
 - No volume on breakout = failed breakout, exit immediately
 - In a Bear market (M = Bear): reduce position sizes or go to cash
     """)
 
-
-# ─── Chat Window ─────────────────────────────────────────────────────────────
+# ── Chat Window ───────────────────────────────────────────────
 st.markdown("---")
 st.markdown("## Ask Claude")
 st.markdown(
