@@ -13,7 +13,7 @@ import json
 from datetime import datetime, timedelta
 
 st.set_page_config(
-    page_title="SEPA Institutional Terminal",
+    page_title="PRISM Terminal",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -48,17 +48,17 @@ st.markdown("""
     .verdict-wait  { background:#2d1f00; color:#d29922; border:2px solid #9e6a03; }
     .verdict-watch { background:#0d1e40; color:#58a6ff; border:2px solid #1f6feb; }
     .verdict-avoid { background:#2d0f0f; color:#f85149; border:2px solid #b91c1c; }
-    .canslim-box {
+    .gf-box {
         background:#161b22; border:1px solid #388bfd; border-radius:10px;
         padding:16px; margin:8px 0;
     }
-    .canslim-letter {
+    .gf-letter {
         font-size:22px; font-weight:bold; font-family:monospace;
         color:#58a6ff; margin-right:8px;
     }
-    .canslim-pass { color:#3fb950; }
-    .canslim-fail { color:#f85149; }
-    .canslim-warn { color:#d29922; }
+    .gf-pass { color:#3fb950; }
+    .gf-fail { color:#f85149; }
+    .gf-warn { color:#d29922; }
     .market-bull { background:#0d3321; color:#3fb950; border:1px solid #238636;
                    border-radius:8px; padding:10px 16px; font-weight:bold; }
     .market-bear { background:#2d0f0f; color:#f85149; border:1px solid #b91c1c;
@@ -130,11 +130,11 @@ def get_gsheet():
         if "Watchlist" not in existing:
             ws = sh.add_worksheet(title="Watchlist", rows=500, cols=10)
             ws.append_row(["Ticker", "Note", "Date Added", "Verdict", "Price",
-                           "TT Score", "VCP Score", "CAN SLIM", "Stage", "Pivot"])
+                           "TT Score", "VCS Score", "GF Score", "Stage", "Pivot"])
         if "History" not in existing:
             wh = sh.add_worksheet(title="History", rows=2000, cols=10)
             wh.append_row(["Ticker", "Date", "Verdict", "Price", "Pivot",
-                           "TT Score", "VCP Score", "CAN SLIM Score", "Market", "Note"])
+                           "TT Score", "VCS Score", "GF Score", "Market", "Note"])
         return sh
     except Exception as e:
         st.error(f"Google Sheets connection error: {e}")
@@ -163,8 +163,8 @@ def wl_load():
                         "verdict":    r.get("Verdict", ""),
                         "current_price":   r.get("Price", ""),
                         "tt_score":        r.get("TT Score", ""),
-                        "vcp_score":       r.get("VCP Score", ""),
-                        "cs_score":        r.get("CAN SLIM", ""),
+                        "vgf_score":       r.get("VCS Score", ""),
+                        "gf_score":        r.get("GF Score", ""),
                         "stage":           r.get("Stage", ""),
                         "pivot":           r.get("Pivot", ""),
                     }
@@ -197,8 +197,8 @@ def wl_add(ticker, note="", verdict="", price="", tt="", vcp="", cs="", stage=""
     # Update local cache
     wl[ticker] = {
         "note": note, "date_added": date_added, "verdict": verdict,
-        "current_price": price, "tt_score": tt, "vcp_score": vcp,
-        "cs_score": cs, "stage": stage, "pivot": pivot
+        "current_price": price, "tt_score": tt, "vgf_score": vcp,
+        "gf_score": cs, "stage": stage, "pivot": pivot
     }
     st.session_state["watchlist"] = wl
 
@@ -229,7 +229,7 @@ def wl_refresh_cache():
 
 
 # ── Verdict Memory: Google Sheets backed ─────────────────────
-def vm_save(ticker, verdict, tt_score, vcp_score, cs_score, price, pivot, market=""):
+def vm_save(ticker, verdict, tt_score, vgf_score, gf_score, price, pivot, market=""):
     """Save verdict snapshot to History sheet."""
     sh = get_gsheet()
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -237,7 +237,7 @@ def vm_save(ticker, verdict, tt_score, vcp_score, cs_score, price, pivot, market
         try:
             wh = sh.worksheet("History")
             wh.append_row([ticker, date_str, verdict, price, pivot,
-                           tt_score, vcp_score, cs_score, market, ""])
+                           tt_score, vgf_score, gf_score, market, ""])
         except Exception as e:
             st.error(f"History write error: {e}")
     # Also update local verdict memory
@@ -248,7 +248,7 @@ def vm_save(ticker, verdict, tt_score, vcp_score, cs_score, price, pivot, market
         vm[ticker] = []
     vm[ticker].append({
         "date": date_str, "verdict": verdict, "tt": tt_score,
-        "vcp": vcp_score, "canslim": cs_score, "price": price, "pivot": pivot,
+        "vcp": vgf_score, "gf": gf_score, "price": price, "pivot": pivot,
     })
     vm[ticker] = vm[ticker][-10:]
     st.session_state["verdict_memory"] = vm
@@ -275,8 +275,8 @@ def vm_get(ticker):
                     "date":    r.get("Date", ""),
                     "verdict": r.get("Verdict", ""),
                     "tt":      r.get("TT Score", ""),
-                    "vcp":     r.get("VCP Score", ""),
-                    "canslim": r.get("CAN SLIM Score", ""),
+                    "vcp":     r.get("VCS Score", ""),
+                    "gf": r.get("GF Score", ""),
                     "price":   r.get("Price", ""),
                     "pivot":   r.get("Pivot", ""),
                 })
@@ -318,7 +318,7 @@ def get_claude():
     return anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
 
 
-# ── Alpaca: Market Direction (M in CAN SLIM) ──────────────────
+# ── Alpaca: Market Direction (M in GF Score) ──────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_market_direction():
     """
@@ -396,9 +396,9 @@ def get_market_direction():
         return "Unknown", {}, str(e)
 
 
-# ── yfinance: Full CAN SLIM fundamentals ──────────────────────
+# ── yfinance: Full GF Score fundamentals ──────────────────────
 @st.cache_data(ttl=3600, show_spinner=False)
-def get_canslim_fundamentals(ticker):
+def get_gf_fundamentals(ticker):
     """
     Pulls data for C, A, N, S, L, I criteria from yfinance.
     Returns a dict with all raw values + pass/fail booleans.
@@ -523,8 +523,8 @@ def get_canslim_fundamentals(ticker):
         return None
 
 
-def canslim_score(cs, market_status):
-    """Score 0-7: one point per CAN SLIM letter."""
+def gf_score(cs, market_status):
+    """Score 0-7: one point per GF Score letter."""
     if cs is None:
         return 0, {}
     m_pass = market_status == "Bull"
@@ -645,9 +645,9 @@ def fetch_data(ticker):
         vol_dry    = bool(vols[0] > vols[1])
         pivot      = float(final10["High"].max())
         pct_to_pivot = float((pivot - price) / price * 100)
-        vcp_score  = int(min(100, 30*contractions + (15 if vol_dry else 0)
+        vgf_score  = int(min(100, 30*contractions + (15 if vol_dry else 0)
                              + (15 if is_tight else 0) + (10 if near_highs else 0)))
-        is_vcp = bool(contractions >= 2 and is_tight and near_highs)
+        is_vcs = bool(contractions >= 2 and is_tight and near_highs)
 
         info       = stock.info
         eps_growth = float(info.get("earningsQuarterlyGrowth", 0) or 0)
@@ -664,7 +664,7 @@ def fetch_data(ticker):
             "tt": tt, "tt_score": int(sum(tt.values())),
             "stage": stage, "stage_label": stage_label,
             "slope20": round(slope20, 2),
-            "vcp_score": vcp_score, "is_vcp": is_vcp,
+            "vgf_score": vgf_score, "is_vcs": is_vcs,
             "contractions": contractions, "tight_rng": round(tight_rng, 2),
             "near_highs": near_highs, "vol_dry": vol_dry,
             "pivot": round(pivot, 2), "pct_to_pivot": round(pct_to_pivot, 2),
@@ -675,15 +675,15 @@ def fetch_data(ticker):
         return None
 
 
-def get_verdict(d, cs_score=0):
+def get_verdict(d, gf_score=0):
     tt  = d["tt_score"]
     ext = (d["price"] / d["sma50"] - 1) * 100
     stg = d["stage"]
-    vcp = d["vcp_score"]
-    if tt >= 7 and stg == 2 and ext < 10 and vcp >= 60 and cs_score >= 5:
-        return "BUY - HIGH CONVICTION SEPA + CAN SLIM SETUP", "buy"
+    vcp = d["vgf_score"]
+    if tt >= 7 and stg == 2 and ext < 10 and vcp >= 60 and gf_score >= 5:
+        return "BUY - HIGH CONVICTION PRISM SETUP", "buy"
     elif tt >= 7 and stg == 2 and ext < 10 and vcp >= 60:
-        return "BUY - HIGH CONVICTION SEPA SETUP", "buy"
+        return "BUY - HIGH CONVICTION PRISM SETUP", "buy"
     elif tt >= 6 and stg == 2 and ext >= 10:
         return "WAIT - EXTENDED, DO NOT CHASE", "wait"
     elif tt >= 6 and stg == 2:
@@ -750,7 +750,7 @@ def make_chart(d, ticker, stop_price, target_2r, target_3r):
         xaxis_rangeslider_visible=False,
         title=dict(
             text=f"{ticker} | ${d['price']:.2f} | TT: {d['tt_score']}/8 | "
-                 f"{d['stage_label']} | VCP: {d['vcp_score']}/100",
+                 f"{d['stage_label']} | VCS: {d['vgf_score']}/100",
             font=dict(size=13, color="#58a6ff")
         ),
         margin=dict(t=60, b=20, l=50, r=80)
@@ -760,10 +760,10 @@ def make_chart(d, ticker, stop_price, target_2r, target_3r):
     return fig
 
 
-def render_canslim_panel(cs, breakdown, cs_score, market_status, market_detail):
-    """Render the CAN SLIM analysis panel."""
+def render_gf_panel(cs, breakdown, gf_score, market_status, market_detail):
+    """Render the GF Score analysis panel."""
     if cs is None:
-        st.warning("CAN SLIM data unavailable for this ticker.")
+        st.warning("GF Score data unavailable for this ticker.")
         return
 
     # Market status badge
@@ -772,7 +772,7 @@ def render_canslim_panel(cs, breakdown, cs_score, market_status, market_detail):
         f'<div class="{css_class}">M — Market Direction: {market_status} &nbsp;|&nbsp; {market_detail}</div>',
         unsafe_allow_html=True
     )
-    st.markdown(f"### CAN SLIM Score: {cs_score}/7")
+    st.markdown(f"### GF Score: {gf_score}/7")
 
     letters = {
         "C": {
@@ -815,11 +815,11 @@ def render_canslim_panel(cs, breakdown, cs_score, market_status, market_detail):
     cols = st.columns(2)
     for i, (letter, data) in enumerate(letters.items()):
         icon   = "✅" if data["pass"] else "❌"
-        c_cls  = "canslim-pass" if data["pass"] else "canslim-fail"
+        c_cls  = "gf-pass" if data["pass"] else "gf-fail"
         with cols[i % 2]:
             st.markdown(
-                f'<div class="canslim-box">'
-                f'<span class="canslim-letter {c_cls}">{letter}</span>'
+                f'<div class="gf-box">'
+                f'<span class="gf-letter {c_cls}">{letter}</span>'
                 f'<strong style="color:#e6edf3;">{icon} {data["label"]}</strong><br>'
                 f'<span style="color:#8b949e;font-size:12px;">{data["detail"]}</span>'
                 f'</div>',
@@ -827,14 +827,14 @@ def render_canslim_panel(cs, breakdown, cs_score, market_status, market_detail):
             )
 
 
-def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, cs_score, market_status):
+def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, gf_score, market_status):
     client = get_claude()
     tt_lines = "\n".join([f"  {k}: {v}" for k, v in d['tt'].items()])
 
-    canslim_lines = ""
+    gf_lines = ""
     if cs:
-        canslim_lines = (
-            f"\nCAN SLIM SCORE: {cs_score}/7\n"
+        gf_lines = (
+            f"\nGF SCORE: {gf_score}/7\n"
             f"  C - Current EPS Growth: {cs['c_eps_growth']}% (Pass: {cs['c_pass']}, Accel: {cs['c_accel']})\n"
             f"  A - Annual EPS Growth: {cs['a_avg_growth']}% (Pass: {cs['a_pass']})\n"
             f"  N - Near 52w High: {cs['n_pct_from_high']}% from high (Pass: {cs['n_pass']})\n"
@@ -846,16 +846,16 @@ def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, cs_score, market_stat
 
     prompt = (
         f"You are Mark Minervini and William O'Neil's trading methodology expert and mentor.\n"
-        f"Analyze this combined SEPA + CAN SLIM setup and give a concise, actionable assessment.\n\n"
+        f"Analyze this combined PRISM setup and give a concise, actionable assessment.\n\n"
         f"TICKER: {ticker} ({d['name']}) | Sector: {d['sector']}\n"
         f"Price: ${d['price']:.2f} | Market Cap: ${d['mktcap']/1e9:.1f}B\n\n"
         f"TREND TEMPLATE: {d['tt_score']}/8\n{tt_lines}\n\n"
         f"STAGE ANALYSIS: {d['stage_label']} | SMA150 slope (20d): {d['slope20']}%\n\n"
-        f"VCP ANALYSIS (Score: {d['vcp_score']}/100):\n"
+        f"VCP ANALYSIS (Score: {d['vgf_score']}/100):\n"
         f"Contractions: {d['contractions']} | Tight: {d['tight_rng']}% | Near highs: {d['near_highs']}\n"
-        f"Volume drying: {d['vol_dry']} | VCP confirmed: {d['is_vcp']}\n"
+        f"Volume drying: {d['vol_dry']} | VCS confirmed: {d['is_vcs']}\n"
         f"Pivot: ${d['pivot']} | Pct to pivot: {d['pct_to_pivot']}%\n"
-        f"{canslim_lines}\n"
+        f"{gf_lines}\n"
         f"RISK/REWARD:\n"
         f"Entry: ${d['pivot']:.2f} | Stop: ${stop:.2f} | 2R: ${t2r:.2f} | 3R: ${t3r:.2f}\n"
         f"Position: {shares} shares\n\n"
@@ -863,8 +863,8 @@ def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, cs_score, market_stat
         f"EPS Growth Q: {d['eps_growth']*100:.1f}% | Revenue Growth: {d['rev_growth']*100:.1f}% | ROE: {d['roe']*100:.1f}%\n\n"
         f"Respond with:\n"
         f"1. SETUP VERDICT: (Actionable / Watch / Avoid - one line, blunt)\n"
-        f"2. SEPA STRENGTHS: (3 bullets max)\n"
-        f"3. CAN SLIM HIGHLIGHTS: (2-3 bullets on C, A, I findings)\n"
+        f"2. PRISM STRENGTHS: (3 bullets max)\n"
+        f"3. GF HIGHLIGHTS: (2-3 bullets on C, A, I findings)\n"
         f"4. WEAKNESSES / RISKS: (3 bullets max)\n"
         f"5. IDEAL ENTRY: (specific price action to wait for)\n"
         f"6. MENTOR NOTE: (one key Minervini/O'Neil insight for this exact setup)"
@@ -886,8 +886,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## Scanner Filters")
     min_tt       = st.slider("Min Trend Template Score", 4, 8, 6)
-    min_vcp      = st.slider("Min VCP Score", 0, 100, 40, 10)
-    min_canslim  = st.slider("Min CAN SLIM Score", 0, 7, 3, 1)
+    min_vcs      = st.slider("Min VCS Score", 0, 100, 40, 10)
+    min_gf  = st.slider("Min GF Score", 0, 7, 3, 1)
     min_price    = st.number_input("Min Price ($)", value=10.0, step=1.0)
     min_vol      = st.number_input("Min Avg Volume", value=300000, step=50000)
     st.markdown("---")
@@ -908,15 +908,15 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         "<p style='color:#8b949e;font-size:11px;'>Data: yfinance + Alpaca | AI: Claude<br>"
-        "SEPA + CAN SLIM | Not financial advice</p>",
+        "PRISM | Not financial advice</p>",
         unsafe_allow_html=True
     )
 
 # ── Header ────────────────────────────────────────────────────
-st.markdown("# SEPA + CAN SLIM Institutional Terminal")
+st.markdown("# PRISM Terminal")
 st.markdown(
     "<p style='color:#8b949e;margin-top:-12px;'>"
-    "SEPA | Trend Template | Stage 2 | VCP | CAN SLIM | Alpaca Market Direction | AI Mentor"
+    "Price · RS · Institutional · Stage · Momentum | Stage 2 | VCS | Growth Fundamentals | AI Mentor"
     "</p>", unsafe_allow_html=True
 )
 st.markdown("---")
@@ -930,13 +930,13 @@ with tab_single:
     if ticker_input:
         with st.spinner(f"Analyzing {ticker_input}..."):
             d  = fetch_data(ticker_input)
-            cs = get_canslim_fundamentals(ticker_input)
-            cs_score, cs_breakdown = canslim_score(cs, mkt_status)
+            cs = get_gf_fundamentals(ticker_input)
+            gf_score, gf_breakdown = gf_score(cs, mkt_status)
 
         if d is None:
             st.error("Insufficient data or invalid ticker.")
         else:
-            verdict_text, verdict_class = get_verdict(d, cs_score)
+            verdict_text, verdict_class = get_verdict(d, gf_score)
             extension = (d["price"] / d["sma50"] - 1) * 100
 
             st.markdown(
@@ -968,12 +968,12 @@ with tab_single:
             c3.metric("Stage", str(d['stage']),
                       delta=d['stage_label'],
                       delta_color="normal" if d['stage'] == 2 else "inverse")
-            c4.metric("VCP Score", f"{d['vcp_score']}/100",
-                      delta="Confirmed" if d['is_vcp'] else "Not confirmed",
-                      delta_color="normal" if d['is_vcp'] else "off")
-            c5.metric("CAN SLIM", f"{cs_score}/7",
-                      delta="Strong" if cs_score >= 5 else ("OK" if cs_score >= 3 else "Weak"),
-                      delta_color="normal" if cs_score >= 5 else ("off" if cs_score >= 3 else "inverse"))
+            c4.metric("VCS Score", f"{d['vgf_score']}/100",
+                      delta="Confirmed" if d['is_vcs'] else "Not confirmed",
+                      delta_color="normal" if d['is_vcs'] else "off")
+            c5.metric("GF Score", f"{gf_score}/7",
+                      delta="Strong" if gf_score >= 5 else ("OK" if gf_score >= 3 else "Weak"),
+                      delta_color="normal" if gf_score >= 5 else ("off" if gf_score >= 3 else "inverse"))
             c6.metric("50MA Ext", f"{extension:.1f}%",
                       delta="Buyable" if extension < 10 else "Extended",
                       delta_color="normal" if extension < 10 else "inverse")
@@ -1027,15 +1027,15 @@ with tab_single:
                 st.markdown(f"% above SMA150: **{pct_above:.1f}%**")
 
             with mid:
-                st.markdown("#### VCP Analysis")
-                st.markdown(f"Score: **{d['vcp_score']}/100** {'✅ Confirmed' if d['is_vcp'] else ''}")
+                st.markdown("#### VCS Analysis")
+                st.markdown(f"Score: **{d['vgf_score']}/100** {'✅ Confirmed' if d['is_vcs'] else ''}")
                 st.markdown(f"Contractions: **{d['contractions']}**")
                 st.markdown(f"Tight range (10d): **{d['tight_rng']}%** {'✅' if d['tight_rng'] < 8 else '❌'}")
                 st.markdown(f"Near highs: {'✅' if d['near_highs'] else '❌'}")
                 st.markdown(f"Volume drying: {'✅' if d['vol_dry'] else '❌'}")
 
             with right:
-                st.markdown("#### SEPA Fundamentals")
+                st.markdown("#### PRISM Fundamentals")
                 st.markdown(f"**{d['name']}** | {d['sector']}")
                 st.markdown(f"EPS Growth (Q): **{d['eps_growth']*100:.1f}%**")
                 st.markdown(f"Revenue Growth: **{d['rev_growth']*100:.1f}%**")
@@ -1043,10 +1043,10 @@ with tab_single:
                 if d['mktcap']:
                     st.markdown(f"Mkt Cap: **${d['mktcap']/1e9:.1f}B**")
 
-            # CAN SLIM Panel
+            # GF Score Panel
             st.markdown("---")
-            st.markdown("### CAN SLIM Analysis")
-            render_canslim_panel(cs, cs_breakdown, cs_score, mkt_status, mkt_detail)
+            st.markdown("### Growth Fundamentals Analysis")
+            render_gf_panel(cs, gf_breakdown, gf_score, mkt_status, mkt_detail)
 
             st.markdown("---")
             st.markdown("#### Chart")
@@ -1062,11 +1062,11 @@ with tab_single:
                         try:
                             commentary = claude_analysis(
                                 ticker_input, d, stop_price, target_2r, target_3r,
-                                shares, cs, cs_score, mkt_status
+                                shares, cs, gf_score, mkt_status
                             )
                             # Auto-save verdict to memory when AI analysis is run
                             vm_save(ticker_input, verdict_text, d["tt_score"],
-                                    d["vcp_score"], cs_score, d["price"], d["pivot"], mkt_status)
+                                    d["vgf_score"], gf_score, d["price"], d["pivot"], mkt_status)
                             st.markdown(
                                 f'<div class="ai-box">{commentary}</div>',
                                 unsafe_allow_html=True
@@ -1096,10 +1096,10 @@ with tab_single:
                 else:
                     if st.button("⭐ Add to Watchlist", key="wl_add"):
                         wl_add(ticker_input, wl_note, verdict_text,
-                               d["price"], d["tt_score"], d["vcp_score"],
-                               cs_score, d["stage_label"], d["pivot"])
+                               d["price"], d["tt_score"], d["vgf_score"],
+                               gf_score, d["stage_label"], d["pivot"])
                         vm_save(ticker_input, verdict_text, d["tt_score"],
-                                d["vcp_score"], cs_score, d["price"], d["pivot"], mkt_status)
+                                d["vgf_score"], gf_score, d["price"], d["pivot"], mkt_status)
                         st.rerun()
 
             # Show verdict history for this ticker
@@ -1115,8 +1115,8 @@ with tab_single:
                             f'<span style="color:#8b949e;">{entry["date"]}</span> &nbsp;|&nbsp; '
                             f'Price: <strong>${entry["price"]}</strong> &nbsp;|&nbsp; '
                             f'TT: {entry["tt"]}/8 &nbsp;|&nbsp; '
-                            f'VCP: {entry["vcp"]} &nbsp;|&nbsp; '
-                            f'CAN SLIM: {entry["canslim"]}/7<br>'
+                            f'VCS: {entry["vcp"]} &nbsp;|&nbsp; '
+                            f'GF Score: {entry["gf"]}/7<br>'
                             f'<span class="{v_cls}">{entry["verdict"]}</span>'
                             f'</div>',
                             unsafe_allow_html=True
@@ -1124,7 +1124,7 @@ with tab_single:
 
 # ── TAB 2: Batch Scanner ──────────────────────────────────────
 with tab_scanner:
-    st.markdown("### Batch SEPA + CAN SLIM Scanner")
+    st.markdown("### PRISM Scanner")
     sc1, sc2, sc3 = st.columns(3)
     with sc1:
         universe = st.selectbox("Universe", ["S&P 500", "Nasdaq 100", "Custom"])
@@ -1137,7 +1137,7 @@ with tab_scanner:
     with fc1:
         require_stage2 = st.checkbox("Require Stage 2", value=True)
     with fc2:
-        require_vcp    = st.checkbox("Require VCP Confirmed", value=False)
+        require_vcs    = st.checkbox("Require VCS Confirmed", value=False)
     with fc3:
         require_bull   = st.checkbox("Require Bull Market (M)", value=False)
 
@@ -1163,16 +1163,16 @@ with tab_scanner:
             if d["price"] < min_price: continue
             if d["df"]["Volume"].tail(50).mean() < min_vol: continue
             if d["tt_score"] < min_tt: continue
-            if d["vcp_score"] < min_vcp: continue
+            if d["vgf_score"] < min_vcs: continue
             if require_stage2 and d["stage"] != 2: continue
-            if require_vcp and not d["is_vcp"]: continue
+            if require_vcs and not d["is_vcs"]: continue
 
-            cs = get_canslim_fundamentals(t)
-            cs_score, _ = canslim_score(cs, mkt_status)
-            if cs_score < min_canslim: continue
+            cs = get_gf_fundamentals(t)
+            gf_score, _ = gf_score(cs, mkt_status)
+            if gf_score < min_gf: continue
             if require_bull and mkt_status != "Bull": continue
 
-            verdict_text, _ = get_verdict(d, cs_score)
+            verdict_text, _ = get_verdict(d, gf_score)
             ext = (d["price"] / d["sma50"] - 1) * 100
 
             rows.append({
@@ -1181,9 +1181,9 @@ with tab_scanner:
                 "Price":       d["price"],
                 "TT Score":    d["tt_score"],
                 "Stage":       d["stage_label"],
-                "VCP Score":   d["vcp_score"],
-                "VCP":         "Yes" if d["is_vcp"] else "No",
-                "CAN SLIM":    f"{cs_score}/7",
+                "VCS Score":   d["vgf_score"],
+                "VCS":         "Yes" if d["is_vcs"] else "No",
+                "GF Score":    f"{gf_score}/7",
                 "C EPS%":      round(cs["c_eps_growth"], 1) if cs else "N/A",
                 "A EPS%":      round(cs["a_avg_growth"], 1) if cs else "N/A",
                 "Inst Own%":   round(cs["inst_own"], 1) if cs else "N/A",
@@ -1203,7 +1203,7 @@ with tab_scanner:
             st.warning("No tickers passed all filters. Try relaxing the settings in the sidebar.")
         else:
             df_r = pd.DataFrame(rows).sort_values(
-                ["CAN SLIM", "VCP Score"], ascending=False
+                ["GF Score", "VCS Score"], ascending=False
             ).reset_index(drop=True)
             st.session_state["scan_results"] = df_r
             st.success(f"Scan complete — {len(df_r)} setups found from {total} tickers. Market: {mkt_status}")
@@ -1212,9 +1212,9 @@ with tab_scanner:
         df_r = st.session_state["scan_results"]
         c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("Total Setups",   len(df_r))
-        c2.metric("VCP Confirmed",  (df_r["VCP"] == "Yes").sum())
+        c2.metric("VCS Confirmed",  (df_r["VCS"] == "Yes").sum())
         c3.metric("Avg TT Score",   f"{df_r['TT Score'].mean():.1f}")
-        c4.metric("Avg VCP Score",  f"{df_r['VCP Score'].mean():.1f}")
+        c4.metric("Avg VCS Score",  f"{df_r['VCS Score'].mean():.1f}")
         c5.metric("Market Status",  mkt_status)
 
         def color_tt(val):
@@ -1227,7 +1227,7 @@ with tab_scanner:
             if val >= 40: return "background-color:#2d1f00;color:#d29922"
             return ""
 
-        def color_canslim(val):
+        def color_gf(val):
             try:
                 n = int(str(val).split("/")[0])
                 if n >= 5: return "background-color:#0d3321;color:#3fb950"
@@ -1239,8 +1239,8 @@ with tab_scanner:
         styled = (
             df_r.style
             .applymap(color_tt,      subset=["TT Score"])
-            .applymap(color_vcp,     subset=["VCP Score"])
-            .applymap(color_canslim, subset=["CAN SLIM"])
+            .applymap(color_vcp,     subset=["VCS Score"])
+            .applymap(color_gf, subset=["GF Score"])
             .format({
                 "Price":    "${:.2f}",
                 "Pivot":    "${:.2f}",
@@ -1255,7 +1255,7 @@ with tab_scanner:
         csv = df_r.to_csv(index=False)
         st.download_button(
             "Download CSV", csv,
-            f"sepa_canslim_scan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            f"sepa_gf_scan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
             "text/csv"
         )
 
@@ -1280,13 +1280,13 @@ with tab_watchlist:
                 wl = wl_load()
                 for t in list(wl.keys()):
                     d_wl = fetch_data(t)
-                    cs_wl = get_canslim_fundamentals(t)
-                    cs_score_wl, _ = canslim_score(cs_wl, mkt_status)
+                    cs_wl = get_gf_fundamentals(t)
+                    gf_score_wl, _ = gf_score(cs_wl, mkt_status)
                     if d_wl:
-                        new_verdict, _ = get_verdict(d_wl, cs_score_wl)
+                        new_verdict, _ = get_verdict(d_wl, gf_score_wl)
                         wl_add(t, wl[t].get("note",""), new_verdict,
-                               d_wl["price"], d_wl["tt_score"], d_wl["vcp_score"],
-                               cs_score_wl, d_wl["stage_label"], d_wl["pivot"])
+                               d_wl["price"], d_wl["tt_score"], d_wl["vgf_score"],
+                               gf_score_wl, d_wl["stage_label"], d_wl["pivot"])
             st.success("Watchlist refreshed and saved to Google Sheets!")
             st.rerun()
 
@@ -1309,8 +1309,8 @@ with tab_watchlist:
                 wl_c1, wl_c2, wl_c3, wl_c4, wl_c5 = st.columns(5)
                 wl_c1.metric("Price",     f"${data.get('current_price', '—')}")
                 wl_c2.metric("TT Score",  f"{data.get('tt_score', '—')}/8")
-                wl_c3.metric("VCP Score", f"{data.get('vcp_score', '—')}")
-                wl_c4.metric("CAN SLIM",  f"{data.get('cs_score', '—')}/7")
+                wl_c3.metric("VCS Score", f"{data.get('vgf_score', '—')}")
+                wl_c4.metric("GF Score",  f"{data.get('gf_score', '—')}/7")
                 wl_c5.metric("% to Pivot",f"{data.get('pct_to_pivot', '—')}%")
 
                 if data.get("note"):
@@ -1326,7 +1326,7 @@ with tab_watchlist:
                         st.markdown(
                             f'<div class="verdict-history">'
                             f'<span style="color:#8b949e;">{entry["date"]}</span> &nbsp;|&nbsp; '
-                            f'${entry["price"]} &nbsp;|&nbsp; TT:{entry["tt"]} VCP:{entry["vcp"]} CS:{entry["canslim"]}/7<br>'
+                            f'${entry["price"]} &nbsp;|&nbsp; TT:{entry["tt"]} VCS:{entry["vcp"]} CS:{entry["gf"]}/7<br>'
                             f'<span class="{v_cls}">{entry["verdict"]}</span>'
                             f'</div>',
                             unsafe_allow_html=True
@@ -1347,10 +1347,10 @@ with tab_watchlist:
                     st.session_state["watchlist"] = wl
 
 with tab_guide:
-    st.markdown("## SEPA + CAN SLIM Methodology Guide")
+    st.markdown("## PRISM Methodology Guide")
     st.markdown("""
 ### How To Use This Terminal
-1. **Single Stock tab** — full SEPA + CAN SLIM analysis on any ticker
+1. **Single Stock tab** — full PRISM analysis on any ticker
 2. **Batch Scanner tab** — scan S&P 500 or Nasdaq 100 for combined setups
 3. **AI Mentor button** — Claude gives a Minervini + O'Neil verdict
 4. **Market Direction (sidebar)** — live SPY/QQQ trend via Alpaca API
@@ -1362,14 +1362,14 @@ with tab_guide:
 |--------|-------|--------|
 | Trend Template | 0-8 | 7-8 ideal, 6 minimum |
 | Stage | 1-4 | Stage 2 only |
-| VCP Score | 0-100 | 70+ strong, 50+ acceptable |
-| CAN SLIM Score | 0-7 | 5+ strong, 3+ acceptable |
+| VCS Score | 0-100 | 70+ strong, 50+ acceptable |
+| GF Score | 0-7 | 5+ strong, 3+ acceptable |
 | Extension above 50MA | % | Under 10% = buyable |
 | % to Pivot | % | Under 5% = near entry |
 
 ---
 
-### CAN SLIM Breakdown
+### Growth Fundamentals Breakdown
 | Letter | Criteria | Minimum Target |
 |--------|----------|----------------|
 | **C** | Current Quarterly EPS Growth | ≥25% YoY, accelerating |
@@ -1382,11 +1382,11 @@ with tab_guide:
 
 ---
 
-### Minervini SEPA Checklist
+### Minervini PRISM Checklist
 - EPS accelerating — at least 2 consecutive quarters of growth
 - Revenue growing — ideally 20%+ YoY
 - Institutional accumulation — RS line making new highs
-- VCP forming on declining, dry volume
+- VCS forming on declining, dry volume
 - Entry exactly at the pivot on a volume surge
 - Market in a confirmed uptrend
 
@@ -1405,7 +1405,7 @@ st.markdown("---")
 st.markdown("## Ask Claude")
 st.markdown(
     "<p style='color:#8b949e;font-size:13px;margin-top:-10px;'>"
-    "Ask anything about SEPA, CAN SLIM, VCP, Stage 2, position sizing, or a specific ticker."
+    "Ask anything about SEPA, GF Score, VCP, Stage 2, position sizing, or a specific ticker."
     "</p>",
     unsafe_allow_html=True
 )
@@ -1432,7 +1432,7 @@ for msg in st.session_state["chat_history"]:
             unsafe_allow_html=True
         )
 
-user_input = st.chat_input("Ask about SEPA, CAN SLIM, VCP, Stage 2, position sizing, a specific ticker...")
+user_input = st.chat_input("Ask about SEPA, GF Score, VCP, Stage 2, position sizing, a specific ticker...")
 
 if user_input:
     if "ANTHROPIC_API_KEY" not in st.secrets:
@@ -1440,7 +1440,7 @@ if user_input:
     else:
         system_prompt = (
             "You are an expert in Mark Minervini's SEPA trading methodology, Stan Weinstein's Stage Analysis, "
-            "and William O'Neil's CAN SLIM framework. You understand VCP patterns, trend templates, "
+            "and William O'Neil's GF Score framework. You understand VCS patterns, trend templates, "
             "relative strength, institutional sponsorship, market direction analysis, position sizing, "
             "and risk management. Give concise, direct, actionable answers like a trading mentor. "
             "Keep responses under 350 words unless detail is needed."
@@ -1469,5 +1469,4 @@ if st.session_state["chat_history"]:
         st.rerun()
 
 st.divider()
-st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | SEPA + CAN SLIM | Alpaca Market Data")
-
+st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | PRISM | Alpaca Market Data")
