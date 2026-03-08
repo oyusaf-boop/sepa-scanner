@@ -925,7 +925,16 @@ tab_single, tab_scanner, tab_watchlist, tab_guide = st.tabs(["Single Stock", "Ba
 
 # ── TAB 1: Single Stock ───────────────────────────────────────
 with tab_single:
-    ticker_input = st.text_input("Enter Ticker", "NVDA", placeholder="e.g. NVDA, AAPL, MSFT").strip().upper()
+    # Pre-populate from Deep Dive button
+    default_ticker = st.session_state.pop("dive_ticker", "NVDA")
+    auto_analyze   = default_ticker != "NVDA" or st.session_state.get("active_tab") == "single"
+    if "active_tab" in st.session_state:
+        del st.session_state["active_tab"]
+
+    ticker_input = st.text_input(
+        "Enter Ticker", default_ticker,
+        placeholder="e.g. NVDA, AAPL, MSFT"
+    ).strip().upper()
 
     if ticker_input:
         with st.spinner(f"Analyzing {ticker_input}..."):
@@ -1268,8 +1277,10 @@ with tab_scanner:
         st.markdown("---")
         st.markdown("**Quick Deep Dive from results**")
         dive_ticker = st.selectbox("Select ticker", df_r["Ticker"].tolist(), key="scanner_dive")
-        if st.button("Deep Dive this ticker"):
-            st.info(f"Go to the Single Stock tab and type: {dive_ticker}")
+        if st.button("🔍 Deep Dive this ticker", type="primary", use_container_width=True):
+            st.session_state["dive_ticker"] = dive_ticker
+            st.session_state["active_tab"]  = "single"
+            st.rerun()
 
 # ── TAB 3: Watchlist ──────────────────────────────────────────
 with tab_watchlist:
