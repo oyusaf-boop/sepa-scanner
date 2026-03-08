@@ -931,7 +931,10 @@ with tab_single:
         with st.spinner(f"Analyzing {ticker_input}..."):
             d  = fetch_data(ticker_input)
             cs = get_gf_fundamentals(ticker_input)
-            gf_score, gf_breakdown = calc_gf_score(cs, mkt_status)
+            try:
+                gf_score, gf_breakdown = calc_gf_score(cs, mkt_status)
+            except Exception:
+                gf_score, gf_breakdown = 0, {}
 
         if d is None:
             st.error("Insufficient data or invalid ticker.")
@@ -1168,7 +1171,10 @@ with tab_scanner:
             if require_vcs and not d["is_vcs"]: continue
 
             cs = get_gf_fundamentals(t)
-            gf_score, _ = calc_gf_score(cs, mkt_status)
+            try:
+                gf_score, _ = calc_gf_score(cs, mkt_status)
+            except Exception:
+                gf_score = 0
             if gf_score < min_gf: continue
             if require_bull and mkt_status != "Bull": continue
 
@@ -1281,7 +1287,10 @@ with tab_watchlist:
                 for t in list(wl.keys()):
                     d_wl = fetch_data(t)
                     cs_wl = get_gf_fundamentals(t)
-                    gf_score_wl, _ = calc_gf_score(cs_wl, mkt_status)
+                    try:
+                        gf_score_wl, _ = calc_gf_score(cs_wl, mkt_status)
+                    except Exception:
+                        gf_score_wl = 0
                     if d_wl:
                         new_verdict, _ = get_verdict(d_wl, gf_score_wl)
                         wl_add(t, wl[t].get("note",""), new_verdict,
