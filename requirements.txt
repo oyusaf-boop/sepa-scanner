@@ -7,5 +7,4 @@ anthropic
 lxml
 html5lib
 gspread
-google-auth
-google-generativeai
+
