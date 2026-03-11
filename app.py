@@ -859,7 +859,7 @@ def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, gf_score, market_stat
         f"RISK/REWARD:\n"
         f"Entry: ${d['pivot']:.2f} | Stop: ${stop:.2f} | 2R: ${t2r:.2f} | 3R: ${t3r:.2f}\n"
         f"Position: {shares} shares\n\n"
-        f"SEPA FUNDAMENTALS:\n"
+        f"PRISM FUNDAMENTALS:\n"
         f"EPS Growth Q: {d['eps_growth']*100:.1f}% | Revenue Growth: {d['rev_growth']*100:.1f}% | ROE: {d['roe']*100:.1f}%\n\n"
         f"Respond with:\n"
         f"1. SETUP VERDICT: (Actionable / Watch / Avoid - one line, blunt)\n"
@@ -1425,7 +1425,7 @@ st.markdown("---")
 st.markdown("## Ask Claude")
 st.markdown(
     "<p style='color:#8b949e;font-size:13px;margin-top:-10px;'>"
-    "Ask anything about SEPA, GF Score, VCP, Stage 2, position sizing, or a specific ticker."
+    "Ask anything about PRISM methodology, GF Score, VCS, Stage 2, position sizing, or a specific ticker."
     "</p>",
     unsafe_allow_html=True
 )
@@ -1452,14 +1452,14 @@ for msg in st.session_state["chat_history"]:
             unsafe_allow_html=True
         )
 
-user_input = st.chat_input("Ask about SEPA, GF Score, VCP, Stage 2, position sizing, a specific ticker...")
+user_input = st.chat_input("Ask about PRISM methodology, GF Score, VCS, Stage 2, position sizing, a specific ticker...")
 
 if user_input:
     if "ANTHROPIC_API_KEY" not in st.secrets:
         st.error("Missing ANTHROPIC_API_KEY in Streamlit Secrets.")
     else:
         system_prompt = (
-            "You are an expert in Mark Minervini's SEPA trading methodology, Stan Weinstein's Stage Analysis, "
+            "You are an expert in momentum trading, Stage 2 analysis, growth fundamentals, and the PRISM methodology. "
             "and William O'Neil's GF Score framework. You understand VCS patterns, trend templates, "
             "relative strength, institutional sponsorship, market direction analysis, position sizing, "
             "and risk management. Give concise, direct, actionable answers like a trading mentor. "
