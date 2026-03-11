@@ -21,90 +21,207 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .stApp { background-color: #0d1117; color: #e6edf3; }
-    .main .block-container { padding: 1.5rem 2rem; max-width: 1400px; }
-    [data-testid="stSidebar"] { background-color: #161b22; border-right: 1px solid #30363d; }
-    h1 { color: #58a6ff !important; font-family: 'Segoe UI', monospace; }
-    h2, h3 { color: #58a6ff !important; }
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+
+    /* ── Base ── */
+    .stApp { background-color: #080c14; color: #d1d9e6; font-family: 'Inter', sans-serif; }
+    .main .block-container { padding: 0.75rem 1.5rem 4rem; max-width: 1600px; }
+    [data-testid="stSidebar"] { background-color: #0d1117; border-right: 1px solid #1e2736; }
+    footer { display: none !important; }
+
+    /* ── Typography ── */
+    h1 { color: #e6edf3 !important; font-family: 'Inter', sans-serif !important;
+         font-weight: 700 !important; letter-spacing: -0.5px; }
+    h2, h3, h4 { color: #c9d1d9 !important; font-family: 'Inter', sans-serif !important;
+                  font-weight: 600 !important; }
+
+    /* ── Tabs ── */
+    .stTabs [data-baseweb="tab-list"] {
+        background: #0d1117; border-bottom: 1px solid #1e2736; gap: 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #6e7f96; font-family: 'Inter', sans-serif;
+        font-size: 13px; font-weight: 500; padding: 10px 20px;
+        border-bottom: 2px solid transparent;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #58a6ff !important; border-bottom: 2px solid #58a6ff !important;
+        background: transparent !important;
+    }
+
+    /* ── Metrics ── */
     [data-testid="metric-container"] {
-        background: #161b22; border: 1px solid #30363d;
-        border-radius: 8px; padding: 12px;
+        background: #0d1117; border: 1px solid #1e2736;
+        border-radius: 6px; padding: 10px 14px;
     }
-    [data-testid="stMetricValue"] { color: #58a6ff !important; }
-    [data-testid="stMetricLabel"] { color: #8b949e !important; }
+    [data-testid="stMetricValue"] {
+        color: #e6edf3 !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-size: 20px !important; font-weight: 600 !important;
+    }
+    [data-testid="stMetricLabel"] { color: #6e7f96 !important; font-size: 11px !important;
+                                    text-transform: uppercase; letter-spacing: 0.5px; }
+    [data-testid="stMetricDelta"] { font-family: 'IBM Plex Mono', monospace !important;
+                                    font-size: 11px !important; }
+
+    /* ── Buttons ── */
     .stButton > button {
-        background: linear-gradient(135deg, #1f6feb, #388bfd);
-        color: white; border: none; border-radius: 6px;
-        font-weight: 600; transition: all 0.2s;
+        background: #1a2332; color: #58a6ff;
+        border: 1px solid #2a3a52; border-radius: 5px;
+        font-family: 'Inter', sans-serif; font-size: 13px;
+        font-weight: 500; padding: 6px 16px; transition: all 0.15s;
     }
-    .stButton > button:hover { transform: translateY(-1px); }
+    .stButton > button:hover {
+        background: #1f6feb; color: white; border-color: #1f6feb;
+    }
+    .stButton > button[kind="primary"] {
+        background: #1f6feb; color: white; border-color: #1f6feb;
+    }
+
+    /* ── Terminal Panel ── */
+    .term-panel {
+        background: #0d1117; border: 1px solid #1e2736;
+        border-radius: 6px; padding: 14px 16px; margin-bottom: 10px;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+    .term-panel-header {
+        font-size: 10px; font-weight: 600; color: #6e7f96;
+        text-transform: uppercase; letter-spacing: 1.5px;
+        border-bottom: 1px solid #1e2736; padding-bottom: 8px; margin-bottom: 10px;
+    }
+    .term-row {
+        display: flex; justify-content: space-between;
+        align-items: center; padding: 3px 0;
+        border-bottom: 1px solid #111820; font-size: 12px;
+    }
+    .term-label { color: #6e7f96; }
+    .term-val   { color: #e6edf3; font-weight: 600; }
+    .term-pass  { color: #3fb950; font-weight: 700; }
+    .term-fail  { color: #f85149; font-weight: 700; }
+    .term-warn  { color: #d29922; font-weight: 700; }
+
+    /* ── Verdict ── */
     .verdict-box {
-        padding: 16px 20px; border-radius: 10px;
-        font-size: 18px; font-weight: bold;
-        text-align: center; margin: 12px 0;
-        font-family: monospace; letter-spacing: 1px;
+        padding: 12px 20px; border-radius: 5px;
+        font-size: 15px; font-weight: 700; text-align: center;
+        font-family: 'IBM Plex Mono', monospace; letter-spacing: 2px;
+        text-transform: uppercase;
     }
-    .verdict-buy   { background:#0d3321; color:#3fb950; border:2px solid #238636; }
-    .verdict-wait  { background:#2d1f00; color:#d29922; border:2px solid #9e6a03; }
-    .verdict-watch { background:#0d1e40; color:#58a6ff; border:2px solid #1f6feb; }
-    .verdict-avoid { background:#2d0f0f; color:#f85149; border:2px solid #b91c1c; }
+    .verdict-buy   { background:#061810; color:#3fb950; border:1px solid #238636; }
+    .verdict-wait  { background:#1a1200; color:#d29922; border:1px solid #9e6a03; }
+    .verdict-watch { background:#060f1e; color:#58a6ff; border:1px solid #1f6feb; }
+    .verdict-avoid { background:#160808; color:#f85149; border:1px solid #b91c1c; }
+
+    /* ── Ticker header bar ── */
+    .ticker-header {
+        display: flex; align-items: baseline; gap: 16px;
+        padding: 10px 0 6px; border-bottom: 1px solid #1e2736; margin-bottom: 12px;
+    }
+    .ticker-symbol {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 28px; font-weight: 700; color: #e6edf3;
+    }
+    .ticker-name   { font-size: 13px; color: #6e7f96; }
+    .ticker-price  {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 26px; font-weight: 600; color: #e6edf3; margin-left: auto;
+    }
+    .ticker-chg-pos { color: #3fb950; font-family: 'IBM Plex Mono', monospace;
+                      font-size: 14px; font-weight: 600; }
+    .ticker-chg-neg { color: #f85149; font-family: 'IBM Plex Mono', monospace;
+                      font-size: 14px; font-weight: 600; }
+    .ticker-sector { font-size: 11px; color: #58a6ff; background: #061828;
+                     padding: 2px 8px; border-radius: 3px; border: 1px solid #1a3a5c; }
+
+    /* ── Score badges ── */
+    .score-badge {
+        display: inline-block; font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px; font-weight: 700; padding: 2px 7px;
+        border-radius: 3px; letter-spacing: 0.5px;
+    }
+    .badge-green { background:#0d2f1a; color:#3fb950; border:1px solid #238636; }
+    .badge-amber { background:#1f1500; color:#d29922; border:1px solid #9e6a03; }
+    .badge-red   { background:#1e0a0a; color:#f85149; border:1px solid #b91c1c; }
+    .badge-blue  { background:#06101e; color:#58a6ff; border:1px solid #1f6feb; }
+
+    /* ── GF boxes ── */
     .gf-box {
-        background:#161b22; border:1px solid #388bfd; border-radius:10px;
-        padding:16px; margin:8px 0;
+        background:#0d1117; border:1px solid #1e2736; border-radius:5px;
+        padding:10px 12px; margin:4px 0;
     }
-    .gf-letter {
-        font-size:22px; font-weight:bold; font-family:monospace;
-        color:#58a6ff; margin-right:8px;
-    }
+    .gf-letter { font-size:18px; font-weight:700; font-family:'IBM Plex Mono',monospace;
+                 margin-right:6px; }
     .gf-pass { color:#3fb950; }
     .gf-fail { color:#f85149; }
     .gf-warn { color:#d29922; }
-    .market-bull { background:#0d3321; color:#3fb950; border:1px solid #238636;
-                   border-radius:8px; padding:10px 16px; font-weight:bold; }
-    .market-bear { background:#2d0f0f; color:#f85149; border:1px solid #b91c1c;
-                   border-radius:8px; padding:10px 16px; font-weight:bold; }
-    .market-neutral { background:#2d1f00; color:#d29922; border:1px solid #9e6a03;
-                      border-radius:8px; padding:10px 16px; font-weight:bold; }
+
+    /* ── Market badge ── */
+    .market-bull { background:#061810; color:#3fb950; border:1px solid #238636;
+                   border-radius:4px; padding:6px 12px; font-weight:700;
+                   font-family:'IBM Plex Mono',monospace; font-size:12px; display:inline-block; }
+    .market-bear { background:#160808; color:#f85149; border:1px solid #b91c1c;
+                   border-radius:4px; padding:6px 12px; font-weight:700;
+                   font-family:'IBM Plex Mono',monospace; font-size:12px; display:inline-block; }
+    .market-neutral { background:#1a1200; color:#d29922; border:1px solid #9e6a03;
+                      border-radius:4px; padding:6px 12px; font-weight:700;
+                      font-family:'IBM Plex Mono',monospace; font-size:12px; display:inline-block; }
+
+    /* ── AI box ── */
     .ai-box {
-        background:#161b22; border:1px solid #6e40c9; border-radius:10px;
-        padding:20px; font-family:monospace; white-space:pre-wrap;
-        line-height:1.7; color:#e6edf3; margin-top:16px;
+        background:#0a0d14; border:1px solid #2a1f4e; border-radius:5px;
+        padding:18px 20px; font-family:'IBM Plex Mono',monospace; white-space:pre-wrap;
+        line-height:1.8; color:#d1d9e6; margin-top:12px; font-size:12px;
     }
-    hr { border-color: #30363d; }
-    .stTabs [data-baseweb="tab"] { color: #8b949e; }
-    .stTabs [aria-selected="true"] { color: #58a6ff !important; }
-    [data-testid="stDivider"] hr { border-color: #21262d !important; border-width: 1px !important; opacity: 0.4; }
-    footer { display: none !important; }
-    /* Fix chat input bottom bar */
-    [data-testid="stBottom"] {
-        background-color: #0d1117 !important;
-        border-top: 1px solid #21262d !important;
+
+    /* ── Dividers ── */
+    hr { border-color: #1e2736 !important; }
+
+    /* ── Verdict history ── */
+    .verdict-history { background:#0a0d14; border:1px solid #1e2736; border-radius:5px;
+                       padding:10px 14px; margin:6px 0; font-family:'IBM Plex Mono',monospace;
+                       font-size:11px; }
+    .verdict-changed-buy  { color:#3fb950; font-weight:700; }
+    .verdict-changed-wait { color:#d29922; font-weight:700; }
+    .verdict-changed-avoid{ color:#f85149; font-weight:700; }
+
+    /* ── Watchlist ── */
+    .watchlist-row { background:#0d1117; border:1px solid #1e2736; border-radius:5px;
+                     padding:8px 12px; margin:3px 0; font-family:'IBM Plex Mono',monospace;
+                     font-size:12px; }
+
+    /* ── Inputs ── */
+    .stTextInput input, .stNumberInput input {
+        background: #0d1117 !important; color: #e6edf3 !important;
+        border: 1px solid #1e2736 !important; border-radius: 4px !important;
+        font-family: 'IBM Plex Mono', monospace !important;
     }
-    [data-testid="stBottom"] > div {
-        background-color: #0d1117 !important;
+    .stSelectbox > div { background: #0d1117 !important; border: 1px solid #1e2736 !important; }
+
+    /* ── Chat ── */
+    [data-testid="stBottom"] { background-color: #080c14 !important;
+                                border-top: 1px solid #1e2736 !important; }
+    [data-testid="stBottom"] > div { background-color: #080c14 !important; }
+    .stChatInput textarea { background-color: #0d1117 !important; color: #e6edf3 !important;
+                            border: 1px solid #1e2736 !important; border-radius: 4px !important;
+                            font-family: 'IBM Plex Mono', monospace !important; }
+
+    /* ── Execution panel ── */
+    .exec-panel {
+        background: #0d1117; border: 1px solid #1e2736; border-radius: 6px;
+        padding: 14px 16px;
     }
-    .stChatInput {
-        background-color: #0d1117 !important;
-        border-top: 1px solid #21262d !important;
-    }
-    .stChatInput textarea {
-        background-color: #161b22 !important;
-        color: #e6edf3 !important;
-        border: 1px solid #30363d !important;
-        border-radius: 8px !important;
-    }
-    /* Remove Streamlit's default bottom padding/border */
-    section[data-testid="stSidebar"] + section > div:last-child {
-        border-top: none !important;
-        box-shadow: none !important;
-    }
-    .watchlist-row { background:#161b22; border:1px solid #30363d; border-radius:8px;
-                     padding:10px 14px; margin:4px 0; }
-    .verdict-history { background:#0d1117; border:1px solid #388bfd; border-radius:8px;
-                       padding:12px 16px; margin:6px 0; font-family:monospace; font-size:12px; }
-    .verdict-changed-buy  { color:#3fb950; font-weight:bold; }
-    .verdict-changed-wait { color:#d29922; font-weight:bold; }
-    .verdict-changed-avoid{ color:#f85149; font-weight:bold; }
+    .exec-header { font-size: 10px; font-weight: 600; color: #6e7f96;
+                   text-transform: uppercase; letter-spacing: 1.5px;
+                   padding-bottom: 8px; margin-bottom: 10px;
+                   border-bottom: 1px solid #1e2736; }
+    .exec-row { display: flex; justify-content: space-between; padding: 4px 0;
+                border-bottom: 1px solid #111820; font-size: 13px; }
+    .exec-label { color: #6e7f96; font-family: 'IBM Plex Mono', monospace; }
+    .exec-val   { color: #e6edf3; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-target-2r { color: #3fb950; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-target-3r { color: #b9f6ca; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-stop  { color: #f85149; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-entry { color: #58a6ff; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -913,13 +1030,19 @@ with st.sidebar:
     )
 
 # ── Header ────────────────────────────────────────────────────
-st.markdown("# PRISM Terminal")
-st.markdown(
-    "<p style='color:#8b949e;margin-top:-12px;'>"
-    "Price · RS · Institutional · Stage · Momentum | Stage 2 | VCS | Growth Fundamentals | AI Mentor"
-    "</p>", unsafe_allow_html=True
-)
-st.markdown("---")
+st.markdown("""
+<div style="display:flex;align-items:center;justify-content:space-between;
+            padding:8px 0 6px;border-bottom:1px solid #1e2736;margin-bottom:4px;">
+  <div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
+                 color:#e6edf3;letter-spacing:2px;">PRISM</span>
+    <span style="font-family:'Inter',sans-serif;font-size:13px;color:#6e7f96;
+                 margin-left:12px;">Price · RS · Institutional · Stage · Momentum</span>
+  </div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3a4a5c;
+              text-align:right;">PERSONAL TERMINAL&nbsp;&nbsp;|&nbsp;&nbsp;NOT FINANCIAL ADVICE</div>
+</div>
+""", unsafe_allow_html=True)
 
 tab_single, tab_scanner, tab_watchlist, tab_guide = st.tabs(["Single Stock", "Batch Scanner", "⭐ Watchlist", "Guide"])
 
@@ -937,7 +1060,7 @@ with tab_single:
     ).strip().upper()
 
     if ticker_input:
-        with st.spinner(f"Analyzing {ticker_input}..."):
+        with st.spinner(f""):
             d  = fetch_data(ticker_input)
             cs = get_gf_fundamentals(ticker_input)
             try:
@@ -946,17 +1069,83 @@ with tab_single:
                 gf_score, gf_breakdown = 0, {}
 
         if d is None:
-            st.error("Insufficient data or invalid ticker.")
+            st.error(f"No data for {ticker_input} — check the ticker symbol.")
         else:
             verdict_text, verdict_class = get_verdict(d, gf_score)
-            extension = (d["price"] / d["sma50"] - 1) * 100
+            extension   = (d["price"] / d["sma50"] - 1) * 100
+            pct_above150 = (d["price"] - d["sma150"]) / d["sma150"] * 100
 
-            st.markdown(
-                f'<div class="verdict-box verdict-{verdict_class}">{verdict_text}</div>',
-                unsafe_allow_html=True
-            )
+            # ── Default execution values ──────────────────────
+            suggested_stop = round(d["price"] * 0.92, 2)
+            stop_price     = suggested_stop
+            dollar_risk    = portfolio * risk_pct
+            risk_per_share = max(d["pivot"] - stop_price, 0.01)
+            shares         = int(dollar_risk / risk_per_share)
+            pos_value      = shares * d["pivot"]
+            target_2r      = d["pivot"] + risk_per_share * 2
+            target_3r      = d["pivot"] + risk_per_share * 3
 
-            # ── Verdict history comparison ────────────────────
+            # ── TICKER HEADER BAR ─────────────────────────────
+            day_chg    = d["price"] - d.get("prev_close", d["price"])
+            day_chg_pct = (day_chg / d.get("prev_close", d["price"])) * 100 if d.get("prev_close") else 0
+            chg_color  = "#3fb950" if day_chg >= 0 else "#f85149"
+            chg_sign   = "+" if day_chg >= 0 else ""
+            mktcap_str = f"${d['mktcap']/1e9:.1f}B" if d.get("mktcap") else "—"
+            vol_str    = f"{d['df']['Volume'].iloc[-1]/1e6:.1f}M" if len(d["df"]) else "—"
+            avg_vol_str= f"{d['df']['Volume'].tail(50).mean()/1e6:.1f}M" if len(d["df"]) else "—"
+            rvol       = d['df']['Volume'].iloc[-1] / d['df']['Volume'].tail(50).mean() if len(d["df"]) else 1
+            w52_hi     = d["df"]["High"].tail(252).max()
+            w52_lo     = d["df"]["Low"].tail(252).min()
+
+            st.markdown(f"""
+            <div style="background:#0d1117;border:1px solid #1e2736;border-radius:6px;
+                        padding:14px 18px;margin-bottom:10px;">
+              <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;
+                             font-weight:700;color:#e6edf3;">{ticker_input}</span>
+                <span style="font-size:13px;color:#6e7f96;max-width:300px;
+                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{d['name']}</span>
+                <span style="font-size:11px;color:#58a6ff;background:#061828;
+                             padding:2px 8px;border-radius:3px;border:1px solid #1a3a5c;">{d['sector']}</span>
+                <div style="margin-left:auto;text-align:right;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;
+                               font-weight:700;color:#e6edf3;">${d['price']:.2f}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;
+                               color:{chg_color};margin-left:10px;">
+                    {chg_sign}{day_chg:.2f} ({chg_sign}{day_chg_pct:.2f}%)
+                  </span>
+                </div>
+              </div>
+              <div style="display:flex;gap:24px;margin-top:10px;flex-wrap:wrap;
+                          font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6e7f96;">
+                <span>MKT CAP <strong style="color:#c9d1d9;">{mktcap_str}</strong></span>
+                <span>VOL <strong style="color:#c9d1d9;">{vol_str}</strong></span>
+                <span>AVG VOL <strong style="color:#c9d1d9;">{avg_vol_str}</strong></span>
+                <span>RVOL <strong style="color:{'#3fb950' if rvol>=1.5 else '#c9d1d9'};">{rvol:.1f}x</strong></span>
+                <span>52W HI <strong style="color:#c9d1d9;">${w52_hi:.2f}</strong></span>
+                <span>52W LO <strong style="color:#c9d1d9;">${w52_lo:.2f}</strong></span>
+                <span>EPS GR <strong style="color:{'#3fb950' if d['eps_growth']>0.25 else '#c9d1d9'};">{d['eps_growth']*100:.1f}%</strong></span>
+                <span>REV GR <strong style="color:{'#3fb950' if d['rev_growth']>0.15 else '#c9d1d9'};">{d['rev_growth']*100:.1f}%</strong></span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── VERDICT + VERDICT HISTORY ─────────────────────
+            v_col, m_col = st.columns([4, 1])
+            with v_col:
+                st.markdown(
+                    f'<div class="verdict-box verdict-{verdict_class}">{verdict_text}</div>',
+                    unsafe_allow_html=True
+                )
+            with m_col:
+                css_class = {"Bull": "market-bull", "Bear": "market-bear"}.get(mkt_status, "market-neutral")
+                st.markdown(
+                    f'<div class="{css_class}" style="height:100%;display:flex;'
+                    f'align-items:center;justify-content:center;margin-top:4px;">'
+                    f'MKT: {mkt_status}</div>',
+                    unsafe_allow_html=True
+                )
+
             prior = vm_compare(ticker_input, verdict_text)
             if prior:
                 delta_color = "verdict-changed-buy" if "BUY" in verdict_text else \
@@ -964,145 +1153,180 @@ with tab_single:
                               "verdict-changed-avoid"
                 st.markdown(
                     f'<div class="verdict-history">'
-                    f'🔄 <strong>Verdict changed since last analysis</strong><br>'
-                    f'<span style="color:#8b949e;">Last checked {prior["date"]}: '
-                    f'{prior["verdict"]} | Price ${prior["price"]} | TT {prior["tt"]}/8 | VCP {prior["vcp"]}</span><br>'
-                    f'<span class="{delta_color}">Now: {verdict_text}</span>'
+                    f'🔄 Verdict changed &nbsp;|&nbsp; '
+                    f'<span style="color:#6e7f96;">Last: {prior["date"]} · '
+                    f'{prior["verdict"]} · ${prior["price"]} · TT {prior["tt"]}/8 · VCS {prior["vcp"]}</span>'
+                    f'&nbsp;→&nbsp;<span class="{delta_color}">{verdict_text}</span>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
 
-            c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
-            c1.metric("Price",          f"${d['price']:.2f}")
-            c2.metric("Trend Template", f"{d['tt_score']}/8",
-                      delta="PASS" if d['tt_score'] >= min_tt else "FAIL",
-                      delta_color="normal" if d['tt_score'] >= min_tt else "inverse")
-            c3.metric("Stage", str(d['stage']),
-                      delta=d['stage_label'],
-                      delta_color="normal" if d['stage'] == 2 else "inverse")
-            c4.metric("VCS Score", f"{d['vgf_score']}/100",
-                      delta="Confirmed" if d['is_vcs'] else "Not confirmed",
-                      delta_color="normal" if d['is_vcs'] else "off")
-            c5.metric("GF Score", f"{gf_score}/7",
-                      delta="Strong" if gf_score >= 5 else ("OK" if gf_score >= 3 else "Weak"),
-                      delta_color="normal" if gf_score >= 5 else ("off" if gf_score >= 3 else "inverse"))
-            c6.metric("50MA Ext", f"{extension:.1f}%",
-                      delta="Buyable" if extension < 10 else "Extended",
-                      delta_color="normal" if extension < 10 else "inverse")
-            c7.metric("Market", mkt_status,
-                      delta_color="normal" if mkt_status == "Bull" else "inverse")
+            # ── MAIN DASHBOARD: LEFT (scores) | RIGHT (chart) ─
+            dash_left, dash_right = st.columns([1, 2])
 
-            st.markdown("---")
-            st.markdown("### Execution & Position Sizing")
-            ex1, ex2, ex3 = st.columns(3)
+            with dash_left:
 
-            with ex1:
-                suggested_stop = round(d["price"] * 0.92, 2)
-                stop_price = st.number_input("Stop Loss ($)", value=suggested_stop,
-                                             step=0.01, key="stop_single")
+                # PRISM SCORES PANEL
+                def badge(val, good, warn):
+                    if val >= good: cls = "badge-green"
+                    elif val >= warn: cls = "badge-amber"
+                    else: cls = "badge-red"
+                    return f'<span class="score-badge {cls}">{val}</span>'
 
-            risk_per_share = d["pivot"] - stop_price
-            if risk_per_share > 0:
-                dollar_risk = portfolio * risk_pct
-                shares      = int(dollar_risk / risk_per_share)
-                pos_value   = shares * d["pivot"]
-                target_2r   = d["pivot"] + risk_per_share * 2
-                target_3r   = d["pivot"] + risk_per_share * 3
-                with ex2:
-                    st.metric("Entry (Pivot)",  f"${d['pivot']:.2f}")
-                    st.metric("Position Size",   f"{shares:,} shares")
-                    st.metric("Position Value",  f"${pos_value:,.0f} ({pos_value/portfolio*100:.1f}%)")
-                with ex3:
-                    st.metric("Risk/Share",  f"${risk_per_share:.2f} ({risk_per_share/d['pivot']*100:.1f}%)")
-                    st.metric("2R Target",   f"${target_2r:.2f}", delta=f"+{(target_2r/d['price']-1)*100:.1f}%")
-                    st.metric("3R Target",   f"${target_3r:.2f}", delta=f"+{(target_3r/d['price']-1)*100:.1f}%")
-            else:
-                st.warning("Stop loss must be below pivot price.")
-                stop_price = round(d["price"] * 0.92, 2)
-                target_2r  = d["pivot"] * 1.10
-                target_3r  = d["pivot"] * 1.15
-                shares     = 0
+                tt_badge  = badge(d["tt_score"], 7, 5)
+                vcs_badge = badge(d["vgf_score"], 70, 40)
+                gf_badge  = badge(gf_score, 5, 3)
+                ext_cls   = "badge-green" if extension < 10 else ("badge-amber" if extension < 20 else "badge-red")
+                ext_badge = f'<span class="score-badge {ext_cls}">{extension:.1f}%</span>'
+                stg_cls   = "badge-green" if d["stage"] == 2 else "badge-amber"
+                stg_badge = f'<span class="score-badge {stg_cls}">{d["stage_label"]}</span>'
 
-            st.markdown("---")
+                st.markdown(f"""
+                <div class="term-panel">
+                  <div class="term-panel-header">PRISM SCORES</div>
+                  <div class="term-row"><span class="term-label">Trend Template</span><span>{tt_badge}/8</span></div>
+                  <div class="term-row"><span class="term-label">Stage</span><span>{stg_badge}</span></div>
+                  <div class="term-row"><span class="term-label">VCS Score</span><span>{vcs_badge}/100</span></div>
+                  <div class="term-row"><span class="term-label">VCS Confirmed</span>
+                    <span class="{'term-pass' if d['is_vcs'] else 'term-fail'}">{'YES' if d['is_vcs'] else 'NO'}</span></div>
+                  <div class="term-row"><span class="term-label">GF Score</span><span>{gf_badge}/7</span></div>
+                  <div class="term-row"><span class="term-label">50MA Extension</span><span>{ext_badge}</span></div>
+                  <div class="term-row"><span class="term-label">SMA150 slope</span>
+                    <span class="term-val">{d['slope20']}%</span></div>
+                  <div class="term-row"><span class="term-label">% above SMA150</span>
+                    <span class="term-val">{pct_above150:.1f}%</span></div>
+                </div>
+                """, unsafe_allow_html=True)
 
-            # Three columns: Trend Template | VCP | Fundamentals
-            left, mid, right = st.columns(3)
+                # TREND TEMPLATE CHECKLIST
+                tt_rows = "".join([
+                    f'<div class="term-row">'
+                    f'<span class="term-label" style="font-size:11px;">{k}</span>'
+                    f'<span class="{"term-pass" if v else "term-fail"}">{"✔" if v else "✘"}</span>'
+                    f'</div>'
+                    for k, v in d["tt"].items()
+                ])
+                st.markdown(f"""
+                <div class="term-panel" style="margin-top:8px;">
+                  <div class="term-panel-header">TREND TEMPLATE</div>
+                  {tt_rows}
+                </div>
+                """, unsafe_allow_html=True)
 
-            with left:
-                st.markdown("#### Trend Template")
-                for criterion, passed in d["tt"].items():
-                    st.markdown(f"{'✅' if passed else '❌'} {criterion}")
-                st.markdown("#### Stage Analysis")
-                st.markdown(f"**{d['stage_label']}**")
-                st.markdown(f"SMA150 slope (20d): **{d['slope20']}%**")
-                pct_above = (d['price'] - d['sma150']) / d['sma150'] * 100
-                st.markdown(f"% above SMA150: **{pct_above:.1f}%**")
+                # VCS PANEL
+                vcs_rows = f"""
+                  <div class="term-row"><span class="term-label">Contractions</span>
+                    <span class="term-val">{d['contractions']}</span></div>
+                  <div class="term-row"><span class="term-label">Tight Range (10d)</span>
+                    <span class="{'term-pass' if d['tight_rng'] < 8 else 'term-fail'}">{d['tight_rng']:.1f}%</span></div>
+                  <div class="term-row"><span class="term-label">Near Highs</span>
+                    <span class="{'term-pass' if d['near_highs'] else 'term-fail'}">{'YES' if d['near_highs'] else 'NO'}</span></div>
+                  <div class="term-row"><span class="term-label">Volume Drying</span>
+                    <span class="{'term-pass' if d['vol_dry'] else 'term-fail'}">{'YES' if d['vol_dry'] else 'NO'}</span></div>
+                """
+                st.markdown(f"""
+                <div class="term-panel" style="margin-top:8px;">
+                  <div class="term-panel-header">VCS ANALYSIS · {d['vgf_score']}/100 {'· CONFIRMED' if d['is_vcs'] else ''}</div>
+                  {vcs_rows}
+                </div>
+                """, unsafe_allow_html=True)
 
-            with mid:
-                st.markdown("#### VCS Analysis")
-                st.markdown(f"Score: **{d['vgf_score']}/100** {'✅ Confirmed' if d['is_vcs'] else ''}")
-                st.markdown(f"Contractions: **{d['contractions']}**")
-                st.markdown(f"Tight range (10d): **{d['tight_rng']}%** {'✅' if d['tight_rng'] < 8 else '❌'}")
-                st.markdown(f"Near highs: {'✅' if d['near_highs'] else '❌'}")
-                st.markdown(f"Volume drying: {'✅' if d['vol_dry'] else '❌'}")
+                # EXECUTION PANEL — stop input then full panel
+                st.markdown("<div style='margin-top:8px;'>", unsafe_allow_html=True)
+                stop_price = st.number_input("Stop Loss ($)", value=suggested_stop, step=0.01, key="stop_single")
+                st.markdown("</div>", unsafe_allow_html=True)
 
-            with right:
-                st.markdown("#### PRISM Fundamentals")
-                st.markdown(f"**{d['name']}** | {d['sector']}")
-                st.markdown(f"EPS Growth (Q): **{d['eps_growth']*100:.1f}%**")
-                st.markdown(f"Revenue Growth: **{d['rev_growth']*100:.1f}%**")
-                st.markdown(f"ROE: **{d['roe']*100:.1f}%**")
-                if d['mktcap']:
-                    st.markdown(f"Mkt Cap: **${d['mktcap']/1e9:.1f}B**")
+                risk_per_share = d["pivot"] - stop_price
+                if risk_per_share > 0:
+                    shares    = int(dollar_risk / risk_per_share)
+                    pos_value = shares * d["pivot"]
+                    target_2r = d["pivot"] + risk_per_share * 2
+                    target_3r = d["pivot"] + risk_per_share * 3
+                    st.markdown(f"""
+                    <div class="term-panel" style="margin-top:4px;">
+                      <div class="term-panel-header">EXECUTION</div>
+                      <div class="term-row"><span class="term-label">Entry (Pivot)</span>
+                        <span class="exec-entry">${d['pivot']:.2f}</span></div>
+                      <div class="term-row"><span class="term-label">Stop Loss</span>
+                        <span class="exec-stop">${stop_price:.2f} ({(stop_price/d['pivot']-1)*100:.1f}%)</span></div>
+                      <div class="term-row"><span class="term-label">Risk / Share</span>
+                        <span class="term-val">${risk_per_share:.2f}</span></div>
+                      <div class="term-row"><span class="term-label">Position Size</span>
+                        <span class="term-val">{shares:,} shares</span></div>
+                      <div class="term-row"><span class="term-label">Position Value</span>
+                        <span class="term-val">${pos_value:,.0f} ({pos_value/portfolio*100:.1f}%)</span></div>
+                      <div class="term-row"><span class="term-label">2R Target</span>
+                        <span class="exec-target-2r">${target_2r:.2f} (+{(target_2r/d['price']-1)*100:.1f}%)</span></div>
+                      <div class="term-row"><span class="term-label">3R Target</span>
+                        <span class="exec-target-3r">${target_3r:.2f} (+{(target_3r/d['price']-1)*100:.1f}%)</span></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning("Stop must be below pivot price.")
+                    target_2r = d["pivot"] * 1.10
+                    target_3r = d["pivot"] * 1.15
+                    shares    = 0
 
-            # GF Score Panel
-            st.markdown("---")
-            st.markdown("### Growth Fundamentals Analysis")
+            with dash_right:
+                # CHART fills right side
+                fig = make_chart(d, ticker_input, stop_price, target_2r, target_3r)
+                fig.update_layout(height=680, margin=dict(t=40, b=20, l=40, r=60))
+                st.plotly_chart(fig, use_container_width=True)
+
+            # ── GF SCORE PANEL (full width below) ────────────
+            st.markdown("<div style='margin-top:4px;'>", unsafe_allow_html=True)
             render_gf_panel(cs, gf_breakdown, gf_score, mkt_status, mkt_detail)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("---")
-            st.markdown("#### Chart")
-            fig = make_chart(d, ticker_input, stop_price, target_2r, target_3r)
-            st.plotly_chart(fig, use_container_width=True)
-
-            st.markdown("---")
-            if st.button("Request Claude AI Mentor Analysis", type="primary"):
+            # ── AI MENTOR ────────────────────────────────────
+            st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
+            ai_col1, ai_col2 = st.columns([1, 4])
+            with ai_col1:
+                run_ai = st.button("🤖 AI Mentor Analysis", type="primary", use_container_width=True)
+            with ai_col2:
+                st.markdown(
+                    "<p style='color:#6e7f96;font-size:11px;font-family:IBM Plex Mono,monospace;"
+                    "margin-top:8px;'>Claude analyzes PRISM scores, GF Score, VCS setup, "
+                    "and generates trade commentary with risk levels.</p>",
+                    unsafe_allow_html=True
+                )
+            if run_ai:
                 if "ANTHROPIC_API_KEY" not in st.secrets:
                     st.error("Missing ANTHROPIC_API_KEY in Streamlit Secrets.")
                 else:
-                    with st.spinner("Consulting Claude AI Mentor..."):
+                    with st.spinner("Consulting AI Mentor..."):
                         try:
                             commentary = claude_analysis(
                                 ticker_input, d, stop_price, target_2r, target_3r,
                                 shares, cs, gf_score, mkt_status
                             )
-                            # Auto-save verdict to memory when AI analysis is run
                             vm_save(ticker_input, verdict_text, d["tt_score"],
                                     d["vgf_score"], gf_score, d["price"], d["pivot"], mkt_status)
                             st.markdown(
                                 f'<div class="ai-box">{commentary}</div>',
                                 unsafe_allow_html=True
                             )
-                            st.success(f"✅ Verdict saved to memory for {ticker_input} — revisit later to see if setup has changed.")
+                            st.success(f"✅ Verdict saved for {ticker_input}")
                         except Exception as e:
-                            st.error(f"Claude error: {e}")
+                            st.error(f"AI Mentor error: {e}")
 
-            # ── Watchlist controls ────────────────────────────
-            st.markdown("---")
+            # ── WATCHLIST CONTROLS ────────────────────────────
+            st.markdown("<div style='height:4px;border-top:1px solid #1e2736;margin-top:10px;'></div>",
+                        unsafe_allow_html=True)
             wl = wl_load()
             in_watchlist = ticker_input in wl
-            wl_col1, wl_col2 = st.columns([3, 1])
+            wl_col1, wl_col2, wl_col3 = st.columns([3, 1, 1])
             with wl_col1:
                 wl_note = st.text_input(
                     "Watchlist note (optional)",
                     value=wl.get(ticker_input, {}).get("note", ""),
-                    placeholder="e.g. Waiting for VCP confirmation, earnings next week...",
+                    placeholder="e.g. Waiting for VCS confirmation, earnings next week...",
                     key="wl_note"
                 )
             with wl_col2:
                 st.markdown("<br>", unsafe_allow_html=True)
                 if in_watchlist:
-                    if st.button("✅ In Watchlist — Remove", key="wl_remove"):
+                    if st.button("✅ Remove from Watchlist", key="wl_remove"):
                         wl_remove(ticker_input)
                         st.rerun()
                 else:
@@ -1113,23 +1337,29 @@ with tab_single:
                         vm_save(ticker_input, verdict_text, d["tt_score"],
                                 d["vgf_score"], gf_score, d["price"], d["pivot"], mkt_status)
                         st.rerun()
+            with wl_col3:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("💾 Save Verdict", key="vm_save_manual"):
+                    vm_save(ticker_input, verdict_text, d["tt_score"],
+                            d["vgf_score"], gf_score, d["price"], d["pivot"], mkt_status)
+                    st.success("Saved.")
 
-            # Show verdict history for this ticker
+            # Verdict history expander
             history = vm_get(ticker_input)
             if len(history) > 1:
-                with st.expander(f"📋 Verdict History for {ticker_input} ({len(history)} entries)"):
+                with st.expander(f"📋 Verdict History ({len(history)} entries)"):
                     for entry in reversed(history):
                         v_cls = "verdict-changed-buy" if "BUY" in entry["verdict"] else \
                                 "verdict-changed-wait" if "WAIT" in entry["verdict"] else \
                                 "verdict-changed-avoid"
                         st.markdown(
                             f'<div class="verdict-history">'
-                            f'<span style="color:#8b949e;">{entry["date"]}</span> &nbsp;|&nbsp; '
-                            f'Price: <strong>${entry["price"]}</strong> &nbsp;|&nbsp; '
-                            f'TT: {entry["tt"]}/8 &nbsp;|&nbsp; '
-                            f'VCS: {entry["vcp"]} &nbsp;|&nbsp; '
-                            f'GF Score: {entry["gf"]}/7<br>'
-                            f'<span class="{v_cls}">{entry["verdict"]}</span>'
+                            f'<span style="color:#6e7f96;">{entry["date"]}</span> &nbsp;|&nbsp; '
+                            f'${entry["price"]} &nbsp;|&nbsp; '
+                            f'TT {entry["tt"]}/8 &nbsp;|&nbsp; '
+                            f'VCS {entry["vcp"]} &nbsp;|&nbsp; '
+                            f'GF {entry["gf"]}/7'
+                            f'&nbsp;&nbsp;<span class="{v_cls}">{entry["verdict"]}</span>'
                             f'</div>',
                             unsafe_allow_html=True
                         )
