@@ -198,12 +198,6 @@ st.markdown("""
     .stSelectbox > div { background: #0d1117 !important; border: 1px solid #1e2736 !important; }
 
     /* ── Chat ── */
-    [data-testid="stBottom"] { background-color: #080c14 !important;
-                                border-top: 1px solid #1e2736 !important; }
-    [data-testid="stBottom"] > div { background-color: #080c14 !important; }
-    .stChatInput textarea { background-color: #0d1117 !important; color: #e6edf3 !important;
-                            border: 1px solid #1e2736 !important; border-radius: 4px !important;
-                            font-family: 'IBM Plex Mono', monospace !important; }
 
     /* ── Execution panel ── */
     .exec-panel {
@@ -1030,6 +1024,7 @@ with st.sidebar:
     )
 
 # ── Header ────────────────────────────────────────────────────
+st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 st.markdown("""
 <div style="display:flex;align-items:center;justify-content:space-between;
             padding:8px 0 6px;border-bottom:1px solid #1e2736;margin-bottom:4px;">
@@ -1789,55 +1784,85 @@ with tab_guide:
 - In a Bear market (M = Bear): reduce position sizes or go to cash
     """)
 
+# ── Top anchor ────────────────────────────────────────────────
+st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+
 # ── Chat Window ───────────────────────────────────────────────
 st.markdown("---")
-st.markdown("## Ask Claude")
-st.markdown(
-    "<p style='color:#8b949e;font-size:13px;margin-top:-10px;'>"
-    "Ask anything about PRISM methodology, GF Score, VCS, Stage 2, position sizing, or a specific ticker."
-    "</p>",
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
+               color:#c9d1d9;letter-spacing:1px;">ASK CLAUDE — PRISM MENTOR</span>
+  <span style="font-size:11px;color:#3a4a5c;font-family:'IBM Plex Mono',monospace;">
+    Methodology · Setups · Position Sizing · Market Conditions
+  </span>
+</div>
+""", unsafe_allow_html=True)
 
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
-for msg in st.session_state["chat_history"]:
-    if msg["role"] == "user":
-        st.markdown(
-            f"""<div style="background:#1f2937;border-radius:10px;padding:12px 16px;
-            margin:6px 0;border-left:3px solid #388bfd;">
-            <span style="color:#8b949e;font-size:11px;">YOU</span><br>
-            <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            f"""<div style="background:#161b22;border-radius:10px;padding:12px 16px;
-            margin:6px 0;border-left:3px solid #6e40c9;font-family:monospace;
-            white-space:pre-wrap;line-height:1.6;">
-            <span style="color:#8b949e;font-size:11px;">CLAUDE</span><br>
-            <span style="color:#e6edf3;">{msg["content"]}</span></div>""",
-            unsafe_allow_html=True
-        )
+# Chat history display — scrollable panel
+if st.session_state["chat_history"]:
+    chat_html_msgs = []
+    for msg in st.session_state["chat_history"]:
+        if msg["role"] == "user":
+            chat_html_msgs.append(
+                f'<div style="background:#0d1117;border-radius:4px;padding:10px 14px;'
+                f'margin:4px 0;border-left:2px solid #1f6feb;">'
+                f'<span style="color:#6e7f96;font-size:10px;font-family:IBM Plex Mono,monospace;'
+                f'letter-spacing:1px;">YOU</span><br>'
+                f'<span style="color:#e6edf3;font-size:13px;">{msg["content"]}</span></div>'
+            )
+        else:
+            chat_html_msgs.append(
+                f'<div style="background:#080c14;border-radius:4px;padding:10px 14px;'
+                f'margin:4px 0;border-left:2px solid #6e40c9;">'
+                f'<span style="color:#6e7f96;font-size:10px;font-family:IBM Plex Mono,monospace;'
+                f'letter-spacing:1px;">CLAUDE</span><br>'
+                f'<span style="color:#d1d9e6;font-size:13px;font-family:IBM Plex Mono,monospace;'
+                f'white-space:pre-wrap;line-height:1.7;">{msg["content"]}</span></div>'
+            )
+    st.markdown(
+        f'<div style="background:#0a0d14;border:1px solid #1e2736;border-radius:6px;'
+        f'padding:12px;max-height:320px;overflow-y:auto;margin-bottom:8px;">'
+        + "".join(chat_html_msgs) +
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
-user_input = st.chat_input("Ask about PRISM methodology, GF Score, VCS, Stage 2, position sizing, a specific ticker...")
+# Input row — regular text_input, NOT st.chat_input
+chat_col1, chat_col2, chat_col3 = st.columns([5, 1, 1])
+with chat_col1:
+    user_input = st.text_input(
+        "chat_input_label",
+        placeholder="Ask about PRISM methodology, VCS, Stage 2, position sizing, a ticker...",
+        key="chat_text_input",
+        label_visibility="collapsed"
+    )
+with chat_col2:
+    send_btn = st.button("Send", type="primary", use_container_width=True)
+with chat_col3:
+    if st.session_state["chat_history"]:
+        if st.button("Clear", use_container_width=True):
+            st.session_state["chat_history"] = []
+            st.rerun()
 
-if user_input:
+if (send_btn or user_input) and user_input.strip():
     if "ANTHROPIC_API_KEY" not in st.secrets:
         st.error("Missing ANTHROPIC_API_KEY in Streamlit Secrets.")
     else:
         system_prompt = (
-            "You are an expert in momentum trading, Stage 2 analysis, growth fundamentals, and the PRISM methodology. "
-            "and William O'Neil's GF Score framework. You understand VCS patterns, trend templates, "
-            "relative strength, institutional sponsorship, market direction analysis, position sizing, "
-            "and risk management. Give concise, direct, actionable answers like a trading mentor. "
-            "Keep responses under 350 words unless detail is needed."
+            "You are an expert in momentum trading, Stage 2 analysis, growth fundamentals, "
+            "and the PRISM methodology. You understand VCS patterns, trend templates, "
+            "relative strength, institutional sponsorship, market direction analysis, "
+            "position sizing, and risk management. Give concise, direct, actionable answers "
+            "like a trading mentor. Keep responses under 350 words unless detail is needed."
         )
-        st.session_state["chat_history"].append({"role": "user", "content": user_input})
+        st.session_state["chat_history"].append({"role": "user", "content": user_input.strip()})
         messages = [{"role": m["role"], "content": m["content"]}
                     for m in st.session_state["chat_history"]]
-        with st.spinner("Claude is thinking..."):
+        with st.spinner(""):
             try:
                 client = get_claude()
                 response = client.messages.create(
@@ -1852,10 +1877,16 @@ if user_input:
             except Exception as e:
                 st.error(f"Chat error: {e}")
 
-if st.session_state["chat_history"]:
-    if st.button("Clear Chat"):
-        st.session_state["chat_history"] = []
-        st.rerun()
-
-st.divider()
-st.caption("Terminal Mandate: 1% Portfolio Risk Rule | Stage 2 Only | PRISM | Alpaca Market Data")
+# ── Footer ─────────────────────────────────────────────────────
+st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+st.markdown("""
+<div style="display:flex;justify-content:space-between;align-items:center;
+            border-top:1px solid #1e2736;padding-top:10px;margin-top:4px;">
+  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3a4a5c;">
+    PRISM TERMINAL · 1% RISK RULE · STAGE 2 ONLY · NOT FINANCIAL ADVICE
+  </span>
+  <a href="#top" style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+     color:#58a6ff;text-decoration:none;background:#0d1117;border:1px solid #1e2736;
+     border-radius:4px;padding:4px 12px;">↑ Back to Top</a>
+</div>
+""", unsafe_allow_html=True)
