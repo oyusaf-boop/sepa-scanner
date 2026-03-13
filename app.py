@@ -1420,25 +1420,30 @@ with tab_scanner:
             verdict_text, _ = get_verdict(d, gf_score)
             ext = (d["price"] / d["sma50"] - 1) * 100
 
+            closes_60 = d["df"]["Close"].tail(60).tolist()
+            day_chg   = round((d["price"] / d["df"]["Close"].iloc[-2] - 1) * 100, 2)                         if len(d["df"]) > 1 else 0.0
+            rvol      = round(d["df"]["Volume"].iloc[-1] /
+                              d["df"]["Volume"].tail(50).mean(), 1)                         if len(d["df"]) > 1 else 1.0
+
             rows.append({
-                "Ticker":      t,
-                "Name":        d["name"],
-                "Price":       d["price"],
-                "TT Score":    d["tt_score"],
-                "Stage":       d["stage_label"],
-                "VCS Score":   d["vgf_score"],
-                "VCS":         "Yes" if d["is_vcs"] else "No",
-                "GF Score":    f"{gf_score}/7",
-                "C EPS%":      round(cs["c_eps_growth"], 1) if cs else "N/A",
-                "A EPS%":      round(cs["a_avg_growth"], 1) if cs else "N/A",
-                "Inst Own%":   round(cs["inst_own"], 1) if cs else "N/A",
-                "Ext%":        round(ext, 1),
-                "Pivot":       d["pivot"],
-                "%toPivot":    d["pct_to_pivot"],
-                "EPS Gr%":     round(d["eps_growth"]*100, 1),
-                "Rev Gr%":     round(d["rev_growth"]*100, 1),
-                "Sector":      d["sector"],
-                "Verdict":     verdict_text,
+                "Ticker":    t,
+                "Name":      d["name"],
+                "Price":     d["price"],
+                "Day%":      day_chg,
+                "TT Score":  d["tt_score"],
+                "Stage":     d["stage_label"],
+                "VCS Score": d["vgf_score"],
+                "VCS":       "Yes" if d["is_vcs"] else "No",
+                "GF Score":  gf_score,
+                "C EPS%":    round(cs["c_eps_growth"], 1) if cs else 0,
+                "Inst Own%": round(cs["inst_own"], 1) if cs else 0,
+                "Ext%":      round(ext, 1),
+                "Pivot":     d["pivot"],
+                "%toPivot":  d["pct_to_pivot"],
+                "RVOL":      rvol,
+                "Sector":    d["sector"],
+                "Verdict":   verdict_text,
+                "_closes":   closes_60,
             })
             time.sleep(0.05)
 
@@ -1455,62 +1460,196 @@ with tab_scanner:
 
     if "scan_results" in st.session_state:
         df_r = st.session_state["scan_results"]
+
+        # ── Summary bar ───────────────────────────────────────
         c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("Total Setups",   len(df_r))
-        c2.metric("VCS Confirmed",  (df_r["VCS"] == "Yes").sum())
-        c3.metric("Avg TT Score",   f"{df_r['TT Score'].mean():.1f}")
-        c4.metric("Avg VCS Score",  f"{df_r['VCS Score'].mean():.1f}")
-        c5.metric("Market Status",  mkt_status)
+        c1.metric("Total Setups",  len(df_r))
+        c2.metric("VCS Confirmed", (df_r["VCS"] == "Yes").sum())
+        c3.metric("Avg TT Score",  f"{df_r['TT Score'].mean():.1f}")
+        c4.metric("Avg VCS Score", f"{df_r['VCS Score'].mean():.1f}")
+        c5.metric("Market",        mkt_status)
 
-        def color_tt(val):
-            if val >= 7: return "background-color:#0d3321;color:#3fb950"
-            if val >= 6: return "background-color:#2d1f00;color:#d29922"
-            return "background-color:#2d0f0f;color:#f85149"
-
-        def color_vcp(val):
-            if val >= 70: return "background-color:#0d3321;color:#3fb950"
-            if val >= 40: return "background-color:#2d1f00;color:#d29922"
-            return ""
-
-        def color_gf(val):
-            try:
-                n = int(str(val).split("/")[0])
-                if n >= 5: return "background-color:#0d3321;color:#3fb950"
-                if n >= 3: return "background-color:#2d1f00;color:#d29922"
-                return "background-color:#2d0f0f;color:#f85149"
-            except Exception:
+        # ── Helper: build inline SVG sparkline ────────────────
+        def make_sparkline_svg(closes, w=90, h=30):
+            if not closes or len(closes) < 2:
                 return ""
+            mn, mx = min(closes), max(closes)
+            rng = mx - mn if mx != mn else 1
+            pts = []
+            for i, v in enumerate(closes):
+                x = i / (len(closes) - 1) * w
+                y = h - ((v - mn) / rng) * (h - 4) - 2
+                pts.append(f"{x:.1f},{y:.1f}")
+            color = "#3fb950" if closes[-1] >= closes[0] else "#f85149"
+            path  = "M " + " L ".join(pts)
+            return (
+                f'<svg width="{w}" height="{h}" style="display:block">' +
+                f'<path d="{path}" fill="none" stroke="{color}" ' +
+                f'stroke-width="1.5" stroke-linejoin="round"/>' +
+                f'</svg>'
+            )
 
-        styled = (
-            df_r.style
-            .applymap(color_tt,      subset=["TT Score"])
-            .applymap(color_vcp,     subset=["VCS Score"])
-            .applymap(color_gf, subset=["GF Score"])
-            .format({
-                "Price":    "${:.2f}",
-                "Pivot":    "${:.2f}",
-                "Ext%":     "{:.1f}%",
-                "%toPivot": "{:.1f}%",
-                "EPS Gr%":  "{:.1f}%",
-                "Rev Gr%":  "{:.1f}%",
-            })
-        )
-        st.dataframe(styled, use_container_width=True, height=500)
+        # ── Helper: heat cell bg ──────────────────────────────
+        def tt_bg(v):
+            if v >= 7:   return "#061810", "#3fb950"
+            if v >= 6:   return "#1a1200", "#d29922"
+            return "#160808", "#f85149"
 
-        csv = df_r.to_csv(index=False)
-        st.download_button(
-            "Download CSV", csv,
-            f"sepa_gf_scan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-            "text/csv"
-        )
+        def vcs_bg(v):
+            if v >= 70:  return "#061810", "#3fb950"
+            if v >= 40:  return "#1a1200", "#d29922"
+            return "#0a0a0a", "#6e7f96"
 
-        st.markdown("---")
-        st.markdown("**Quick Deep Dive from results**")
-        dive_ticker = st.selectbox("Select ticker", df_r["Ticker"].tolist(), key="scanner_dive")
-        if st.button("🔍 Deep Dive this ticker", type="primary", use_container_width=True):
-            st.session_state["dive_ticker"] = dive_ticker
-            st.session_state["active_tab"]  = "single"
-            st.rerun()
+        def gf_bg(v):
+            if v >= 5:   return "#061810", "#3fb950"
+            if v >= 3:   return "#1a1200", "#d29922"
+            return "#160808", "#f85149"
+
+        def ext_bg(v):
+            if v < 5:    return "#061810", "#3fb950"
+            if v < 10:   return "#1a1200", "#d29922"
+            return "#160808", "#f85149"
+
+        def day_bg(v):
+            if v > 1:    return "#061810", "#3fb950"
+            if v < -1:   return "#160808", "#f85149"
+            return "#0d1117", "#8b949e"
+
+        def verdict_cell(v):
+            if "BUY"   in v: return "#061810", "#3fb950", "BUY"
+            if "WAIT"  in v: return "#1a1200", "#d29922", "WAIT"
+            if "WATCH" in v: return "#060f1e", "#58a6ff", "WATCH"
+            return "#160808", "#f85149", "AVOID"
+
+        # ── Build HTML table ──────────────────────────────────
+        cols_display = ["Ticker","Name","Price","Day%","Sparkline",
+                        "TT Score","Stage","VCS Score","GF Score",
+                        "C EPS%","Inst Own%","Ext%","RVOL",
+                        "%toPivot","Pivot","Verdict"]
+
+        header_cells = "".join([
+            f'<th style="padding:6px 10px;text-align:left;font-size:10px;' +
+            f'color:#6e7f96;font-weight:600;text-transform:uppercase;' +
+            f'letter-spacing:1px;border-bottom:1px solid #1e2736;' +
+            f'white-space:nowrap;">{c}</th>'
+            for c in cols_display
+        ])
+
+        row_htmls = []
+        for _, row in df_r.iterrows():
+            spark = make_sparkline_svg(row.get("_closes", []))
+
+            tt_b,  tt_c  = tt_bg(row["TT Score"])
+            vcs_b, vcs_c = vcs_bg(row["VCS Score"])
+            gf_b,  gf_c  = gf_bg(row["GF Score"])
+            ext_b, ext_c = ext_bg(row["Ext%"])
+            day_b, day_c = day_bg(row["Day%"])
+            vb, vc, vshort = verdict_cell(row["Verdict"])
+
+            day_sign = "+" if row["Day%"] > 0 else ""
+            rvol_c   = "#3fb950" if row["RVOL"] >= 1.5 else "#c9d1d9"
+
+            cells = [
+                # Ticker
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:13px;font-weight:700;color:#58a6ff;' +
+                f'white-space:nowrap;cursor:pointer;">{row["Ticker"]}</td>',
+                # Name
+                f'<td style="padding:6px 10px;font-size:11px;color:#6e7f96;' +
+                f'max-width:140px;overflow:hidden;text-overflow:ellipsis;' +
+                f'white-space:nowrap;">{row["Name"][:20]}</td>',
+                # Price
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:13px;color:#e6edf3;font-weight:600;">${row["Price"]:.2f}</td>',
+                # Day%
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:12px;background:{day_b};color:{day_c};' +
+                f'font-weight:600;">{day_sign}{row["Day%"]:.1f}%</td>',
+                # Sparkline
+                f'<td style="padding:4px 10px;">{spark}</td>',
+                # TT Score
+                f'<td style="padding:6px 10px;text-align:center;' +
+                f'font-family:IBM Plex Mono,monospace;font-size:13px;' +
+                f'font-weight:700;background:{tt_b};color:{tt_c};">{row["TT Score"]}/8</td>',
+                # Stage
+                f'<td style="padding:6px 10px;font-size:11px;color:#8b949e;' +
+                f'white-space:nowrap;">{row["Stage"].replace("Stage ","S")}</td>',
+                # VCS Score
+                f'<td style="padding:6px 10px;text-align:center;' +
+                f'font-family:IBM Plex Mono,monospace;font-size:13px;' +
+                f'font-weight:700;background:{vcs_b};color:{vcs_c};">{row["VCS Score"]}</td>',
+                # GF Score
+                f'<td style="padding:6px 10px;text-align:center;' +
+                f'font-family:IBM Plex Mono,monospace;font-size:13px;' +
+                f'font-weight:700;background:{gf_b};color:{gf_c};">{row["GF Score"]}/7</td>',
+                # C EPS%
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:12px;color:{"#3fb950" if row["C EPS%"]>=25 else "#8b949e"};">' +
+                f'{row["C EPS%"]:+.1f}%</td>',
+                # Inst Own%
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:12px;color:#8b949e;">{row["Inst Own%"]:.1f}%</td>',
+                # Ext%
+                f'<td style="padding:6px 10px;text-align:center;' +
+                f'font-family:IBM Plex Mono,monospace;font-size:12px;' +
+                f'background:{ext_b};color:{ext_c};">{row["Ext%"]:+.1f}%</td>',
+                # RVOL
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:12px;color:{rvol_c};">{row["RVOL"]:.1f}x</td>',
+                # %toPivot
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:12px;color:#6e7f96;">{row["%toPivot"]:+.1f}%</td>',
+                # Pivot
+                f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
+                f'font-size:12px;color:#58a6ff;">${row["Pivot"]:.2f}</td>',
+                # Verdict
+                f'<td style="padding:4px 10px;">' +
+                f'<span style="background:{vb};color:{vc};border-radius:3px;' +
+                f'padding:2px 7px;font-size:10px;font-weight:700;' +
+                f'font-family:IBM Plex Mono,monospace;letter-spacing:0.5px;' +
+                f'white-space:nowrap;">{vshort}</span></td>',
+            ]
+            hover_in  = "this.style.background='#0d1a28'"
+            hover_out = "this.style.background='transparent'"
+            row_html = (
+                '<tr style="border-bottom:1px solid #111820;" '
+                f'onmouseover="{hover_in}" onmouseout="{hover_out}">' +
+                "".join(cells) + "</tr>"
+            )
+            row_htmls.append(row_html)
+
+        table_html = f"""
+        <div style="overflow-x:auto;margin-top:8px;">
+          <table style="width:100%;border-collapse:collapse;
+                        background:#080c14;font-family:Inter,sans-serif;">
+            <thead><tr style="background:#0d1117;">{header_cells}</tr></thead>
+            <tbody>{"".join(row_htmls)}</tbody>
+          </table>
+        </div>
+        """
+        st.markdown(table_html, unsafe_allow_html=True)
+
+        # ── CSV download + Deep Dive ──────────────────────────
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        dl_col, dive_col, btn_col = st.columns([2, 2, 1])
+        with dl_col:
+            export_cols = [c for c in df_r.columns if not c.startswith("_")]
+            csv = df_r[export_cols].to_csv(index=False)
+            st.download_button(
+                "⬇ Download CSV", csv,
+                f"prism_scan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                "text/csv", use_container_width=True
+            )
+        with dive_col:
+            dive_ticker = st.selectbox(
+                "Deep Dive into:", df_r["Ticker"].tolist(), key="scanner_dive"
+            )
+        with btn_col:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🔍 Deep Dive", type="primary", use_container_width=True):
+                st.session_state["dive_ticker"] = dive_ticker
+                st.session_state["active_tab"]  = "single"
+                st.rerun()
 
 # ── TAB 3: Watchlist ──────────────────────────────────────────
 with tab_watchlist:
