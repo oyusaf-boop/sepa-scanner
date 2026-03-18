@@ -340,15 +340,15 @@ def wl_refresh_cache():
 
 
 # ── Verdict Memory: Google Sheets backed ─────────────────────
-def vm_save(ticker, verdict, tt_score, vgf_score, gf_score, price, pivot, market=""):
-    """Save verdict snapshot to History sheet."""
+def vm_save(ticker, verdict, tt_score, vgf_score, gf_score, price, pivot, market="", ai_commentary=""):
+    """Save verdict snapshot to History sheet — includes AI commentary."""
     sh = get_gsheet()
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     if sh:
         try:
             wh = sh.worksheet("History")
             wh.append_row([ticker, date_str, verdict, price, pivot,
-                           tt_score, vgf_score, gf_score, market, ""])
+                           tt_score, vgf_score, gf_score, market, ai_commentary])
         except Exception as e:
             st.error(f"History write error: {e}")
     # Also update local verdict memory
@@ -360,6 +360,7 @@ def vm_save(ticker, verdict, tt_score, vgf_score, gf_score, price, pivot, market
     vm[ticker].append({
         "date": date_str, "verdict": verdict, "tt": tt_score,
         "vcp": vgf_score, "gf": gf_score, "price": price, "pivot": pivot,
+        "ai_commentary": ai_commentary,
     })
     vm[ticker] = vm[ticker][-10:]
     st.session_state["verdict_memory"] = vm
@@ -383,13 +384,14 @@ def vm_get(ticker):
         for r in rows:
             if r.get("Ticker", "").strip().upper() == ticker:
                 history.append({
-                    "date":    r.get("Date", ""),
-                    "verdict": r.get("Verdict", ""),
-                    "tt":      r.get("TT Score", ""),
-                    "vcp":     r.get("VCS Score", ""),
-                    "gf": r.get("GF Score", ""),
-                    "price":   r.get("Price", ""),
-                    "pivot":   r.get("Pivot", ""),
+                    "date":         r.get("Date", ""),
+                    "verdict":      r.get("Verdict", ""),
+                    "tt":           r.get("TT Score", ""),
+                    "vcp":          r.get("VCS Score", ""),
+                    "gf":           r.get("GF Score", ""),
+                    "price":        r.get("Price", ""),
+                    "pivot":        r.get("Pivot", ""),
+                    "ai_commentary": r.get("AI_Commentary", ""),
                 })
         # Cache in session
         if "verdict_memory" not in st.session_state:
@@ -398,6 +400,22 @@ def vm_get(ticker):
         return history
     except Exception:
         return []
+
+
+def vm_get_last_commentary(ticker):
+    """Get the most recent AI commentary for a ticker — session first, Sheets fallback."""
+    # Check session cache
+    if "verdict_memory" in st.session_state:
+        history = st.session_state["verdict_memory"].get(ticker, [])
+        for entry in reversed(history):
+            if entry.get("ai_commentary"):
+                return entry
+    # Check Sheets
+    history = vm_get(ticker)
+    for entry in reversed(history):
+        if entry.get("ai_commentary"):
+            return entry
+    return None
 
 
 def vm_compare(ticker, current_verdict):
@@ -940,49 +958,106 @@ def render_gf_panel(cs, breakdown, gf_score, market_status, market_detail):
 
 def claude_analysis(ticker, d, stop, t2r, t3r, shares, cs, gf_score, market_status):
     client = get_claude()
-    tt_lines = "\n".join([f"  {k}: {v}" for k, v in d['tt'].items()])
+
+    # ── Build data strings ────────────────────────────────────
+    tt_lines = "\n".join([
+        f"  {'✅' if v else '❌'} {k}" for k, v in d['tt'].items()
+    ])
+    ext = round((d['price'] / d['sma50'] - 1) * 100, 1)
 
     gf_lines = ""
     if cs:
         gf_lines = (
-            f"\nGF SCORE: {gf_score}/7\n"
-            f"  C - Current EPS Growth: {cs['c_eps_growth']}% (Pass: {cs['c_pass']}, Accel: {cs['c_accel']})\n"
-            f"  A - Annual EPS Growth: {cs['a_avg_growth']}% (Pass: {cs['a_pass']})\n"
-            f"  N - Near 52w High: {cs['n_pct_from_high']}% from high (Pass: {cs['n_pass']})\n"
-            f"  S - Float: {cs['float_shares']/1e6:.0f}M, Accumulation: {cs['s_accum']} (Pass: {cs['s_pass']})\n"
-            f"  L - 1yr Perf: {cs['l_perf_1yr']}% (Pass: {cs['l_pass']})\n"
-            f"  I - Inst Ownership: {cs['inst_own']}% (Pass: {cs['i_pass']})\n"
-            f"  M - Market: {market_status}\n"
+            f"\nGROWTH FUNDAMENTALS (GF Score: {gf_score}/7):\n"
+            f"  C — EPS Growth (Q): {cs['c_eps_growth']}% | Accelerating: {cs['c_accel']} | Pass: {cs['c_pass']}\n"
+            f"  A — Annual EPS Growth: {cs['a_avg_growth']}% | Consistent: {cs['a_consistent']} | Pass: {cs['a_pass']}\n"
+            f"  N — From 52w High: {cs['n_pct_from_high']}% | Pass: {cs['n_pass']}\n"
+            f"  S — Float: {cs['float_shares']/1e6:.0f}M | Accumulation: {cs['s_accum']} | Pass: {cs['s_pass']}\n"
+            f"  L — 1yr Performance: {cs['l_perf_1yr']}% | Pass: {cs['l_pass']}\n"
+            f"  I — Institutional Own: {cs['inst_own']}% | Pass: {cs['i_pass']}\n"
+            f"  M — Market: {market_status}\n"
         )
 
-    prompt = (
-        f"You are Mark Minervini and William O'Neil's trading methodology expert and mentor.\n"
-        f"Analyze this combined PRISM setup and give a concise, actionable assessment.\n\n"
-        f"TICKER: {ticker} ({d['name']}) | Sector: {d['sector']}\n"
-        f"Price: ${d['price']:.2f} | Market Cap: ${d['mktcap']/1e9:.1f}B\n\n"
-        f"TREND TEMPLATE: {d['tt_score']}/8\n{tt_lines}\n\n"
-        f"STAGE ANALYSIS: {d['stage_label']} | SMA150 slope (20d): {d['slope20']}%\n\n"
-        f"VCP ANALYSIS (Score: {d['vgf_score']}/100):\n"
-        f"Contractions: {d['contractions']} | Tight: {d['tight_rng']}% | Near highs: {d['near_highs']}\n"
-        f"Volume drying: {d['vol_dry']} | VCS confirmed: {d['is_vcs']}\n"
-        f"Pivot: ${d['pivot']} | Pct to pivot: {d['pct_to_pivot']}%\n"
-        f"{gf_lines}\n"
-        f"RISK/REWARD:\n"
-        f"Entry: ${d['pivot']:.2f} | Stop: ${stop:.2f} | 2R: ${t2r:.2f} | 3R: ${t3r:.2f}\n"
-        f"Position: {shares} shares\n\n"
-        f"PRISM FUNDAMENTALS:\n"
-        f"EPS Growth Q: {d['eps_growth']*100:.1f}% | Revenue Growth: {d['rev_growth']*100:.1f}% | ROE: {d['roe']*100:.1f}%\n\n"
-        f"Respond with:\n"
-        f"1. SETUP VERDICT: (Actionable / Watch / Avoid - one line, blunt)\n"
-        f"2. PRISM STRENGTHS: (3 bullets max)\n"
-        f"3. GF HIGHLIGHTS: (2-3 bullets on C, A, I findings)\n"
-        f"4. WEAKNESSES / RISKS: (3 bullets max)\n"
-        f"5. IDEAL ENTRY: (specific price action to wait for)\n"
-        f"6. MENTOR NOTE: (one key Minervini/O'Neil insight for this exact setup)"
+    # ── Retrieve prior analysis ───────────────────────────────
+    prior = vm_get_last_commentary(ticker)
+    prior_section = ""
+    if prior:
+        prior_ai = prior.get("ai_commentary", "")
+        prior_section = (
+            f"\nPREVIOUS ANALYSIS ({prior['date']}):\n"
+            f"  Verdict: {prior['verdict']}\n"
+            f"  Price: ${prior['price']} | TT: {prior['tt']}/8 | VCS: {prior['vcp']} | GF: {prior['gf']}/7 | Pivot: ${prior['pivot']}\n"
+        )
+        if prior_ai:
+            prior_section += f"  Prior commentary: \"{prior_ai[:500]}\"\n"
+
+    # ── System prompt — experienced trader ───────────────────
+    system = (
+        "You are an elite momentum trader with 25 years managing institutional capital. "
+        "Your framework: Minervini (Trend Template, VCS patterns, risk management), "
+        "Weinstein (Stage Analysis — you only buy Stage 2), O'Neil (growth criteria, market direction). "
+        "Your voice is direct and specific — you reference exact price levels, name patterns explicitly, "
+        "and always deliver one clear actionable conclusion. "
+        "You never say 'looks interesting' or 'seems promising' — you are precise. "
+        "When prior analysis is provided, you EXPLICITLY compare what changed, "
+        "what confirmed, and what deteriorated. Numbers, not adjectives."
     )
+
+    # ── Full analysis prompt ──────────────────────────────────
+    has_prior = bool(prior)
+    compared_section = (
+        "COMPARED TO LAST TIME:\n"
+        "[Explicitly state every material change since prior analysis — "
+        "VCS score delta, TT score delta, price vs prior pivot, volume confirmation or lack thereof. "
+        "Be specific: 'VCS moved from X to Y', 'volume has/has not confirmed', 'price is now X% above/below prior pivot'.]\n\n"
+        if has_prior else ""
+    )
+
+    prompt = (
+        f"Analyze this PRISM setup for {ticker} ({d['name']}) — {d['sector']} sector.\n\n"
+        f"CURRENT SNAPSHOT ({datetime.now().strftime('%Y-%m-%d')}):\n"
+        f"Price: ${d['price']:.2f} | Mkt Cap: ${d['mktcap']/1e9:.1f}B\n"
+        f"52w High: ${d['high52']:.2f} | 52w Low: ${d['low52']:.2f}\n"
+        f"50MA Extension: {ext:+.1f}% | "
+        f"{'⚠️ Extended — do not chase' if ext > 10 else '✅ Within buyable range' if ext < 5 else '⚡ Borderline — proceed with caution'}\n\n"
+        f"TREND TEMPLATE ({d['tt_score']}/8):\n{tt_lines}\n\n"
+        f"STAGE: {d['stage_label']} | SMA150 Slope (20d): {d['slope20']}%\n\n"
+        f"VCS SETUP (Score: {d['vgf_score']}/100 | {'✅ CONFIRMED' if d['is_vcs'] else '❌ NOT CONFIRMED'}):\n"
+        f"  Contractions: {d['contractions']} | Tight range: {d['tight_rng']:.1f}% "
+        f"({'✅' if d['tight_rng'] < 8 else '❌'}) | Near highs: {'✅' if d['near_highs'] else '❌'} "
+        f"| Volume drying: {'✅' if d['vol_dry'] else '❌'}\n"
+        f"  Pivot: ${d['pivot']:.2f} | {d['pct_to_pivot']:+.1f}% from current price\n"
+        f"{gf_lines}\n"
+        f"EXECUTION:\n"
+        f"  Entry: ${d['pivot']:.2f} | Stop: ${stop:.2f} ({(stop/d['pivot']-1)*100:.1f}%) | "
+        f"2R: ${t2r:.2f} | 3R: ${t3r:.2f} | Shares: {shares:,}\n"
+        f"{prior_section}\n"
+        f"Respond in this exact format:\n\n"
+        f"SETUP VERDICT: [ACTIONABLE / WATCH / AVOID] — one blunt sentence.\n\n"
+        f"WHAT'S WORKING:\n"
+        f"• [specific strength + data point]\n"
+        f"• [specific strength + data point]\n"
+        f"• [specific strength + data point]\n\n"
+        f"WHAT'S MISSING / RISKS:\n"
+        f"• [specific weakness + data point]\n"
+        f"• [specific weakness + data point]\n"
+        f"• [specific weakness + data point]\n\n"
+        f"PATTERN READ:\n"
+        f"[2-3 sentences. Name the exact pattern, stage, what the chart structure is telling you. "
+        f"Reference specific MAs and price levels.]\n\n"
+        f"{compared_section}"
+        f"IDEAL ENTRY CONDITIONS:\n"
+        f"[Exact price action required — volume threshold, breakout level, or base completion. "
+        f"Give a specific price or trigger, not a vague description.]\n\n"
+        f"MENTOR INSIGHT:\n"
+        f"[One sentence, in the direct voice of an experienced trader — "
+        f"the single most important thing this setup is teaching you right now.]"
+    )
+
     msg = client.messages.create(
         model="claude-sonnet-4-5",
-        max_tokens=750,
+        max_tokens=900,
+        system=system,
         messages=[{"role": "user", "content": prompt}]
     )
     return msg.content[0].text
@@ -1292,6 +1367,21 @@ with tab_single:
                     "and generates trade commentary with risk levels.</p>",
                     unsafe_allow_html=True
                 )
+            # Show prior analysis badge if exists
+            prior_entry = vm_get_last_commentary(ticker_input)
+            if prior_entry and prior_entry.get("ai_commentary"):
+                st.markdown(
+                    f'<div style="background:#111318;border:1px solid #2a2d35;border-radius:4px;'
+                    f'padding:6px 12px;margin-bottom:6px;font-family:IBM Plex Mono,monospace;font-size:11px;">'
+                    f'🧠 <span style="color:#58a6ff;">Prior analysis found</span> '
+                    f'<span style="color:#6e7f96;">— {prior_entry["date"]} · '
+                    f'TT {prior_entry["tt"]}/8 · VCS {prior_entry["vcp"]} · GF {prior_entry["gf"]}/7 · '
+                    f'${prior_entry["price"]}</span> — '
+                    f'<span style="color:#d29922;">AI will compare against this</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
             if run_ai:
                 if "ANTHROPIC_API_KEY" not in st.secrets:
                     st.error("Missing ANTHROPIC_API_KEY in Streamlit Secrets.")
@@ -1302,13 +1392,15 @@ with tab_single:
                                 ticker_input, d, stop_price, target_2r, target_3r,
                                 shares, cs, gf_score, mkt_status
                             )
+                            # Save verdict + commentary together
                             vm_save(ticker_input, verdict_text, d["tt_score"],
-                                    d["vgf_score"], gf_score, d["price"], d["pivot"], mkt_status)
+                                    d["vgf_score"], gf_score, d["price"], d["pivot"],
+                                    mkt_status, ai_commentary=commentary)
                             st.markdown(
                                 f'<div class="ai-box">{commentary}</div>',
                                 unsafe_allow_html=True
                             )
-                            st.success(f"✅ Verdict saved for {ticker_input}")
+                            st.success(f"✅ Analysis saved for {ticker_input} — run again later to see what changed")
                         except Exception as e:
                             st.error(f"AI Mentor error: {e}")
 
