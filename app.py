@@ -24,9 +24,9 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
 
     /* ── Base ── */
-    .stApp { background-color: #080c14; color: #d1d9e6; font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #13151a; color: #d1d9e6; font-family: 'Inter', sans-serif; }
     .main .block-container { padding: 0.75rem 1.5rem 4rem; max-width: 1600px; }
-    [data-testid="stSidebar"] { background-color: #0d1117; border-right: 1px solid #1e2736; }
+    [data-testid="stSidebar"] { background-color: #1a1d23; border-right: 1px solid #2a2d35; }
     footer { display: none !important; }
 
     /* ── Typography ── */
@@ -37,7 +37,7 @@ st.markdown("""
 
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] {
-        background: #0d1117; border-bottom: 1px solid #1e2736; gap: 0;
+        background: #1a1d23; border-bottom: 1px solid #2a2d35; gap: 0;
     }
     .stTabs [data-baseweb="tab"] {
         color: #6e7f96; font-family: 'Inter', sans-serif;
@@ -51,7 +51,7 @@ st.markdown("""
 
     /* ── Metrics ── */
     [data-testid="metric-container"] {
-        background: #0d1117; border: 1px solid #1e2736;
+        background: #1a1d23; border: 1px solid #2a2d35;
         border-radius: 6px; padding: 10px 14px;
     }
     [data-testid="stMetricValue"] {
@@ -80,19 +80,19 @@ st.markdown("""
 
     /* ── Terminal Panel ── */
     .term-panel {
-        background: #0d1117; border: 1px solid #1e2736;
+        background: #1a1d23; border: 1px solid #2a2d35;
         border-radius: 6px; padding: 14px 16px; margin-bottom: 10px;
         font-family: 'IBM Plex Mono', monospace;
     }
     .term-panel-header {
         font-size: 10px; font-weight: 600; color: #6e7f96;
         text-transform: uppercase; letter-spacing: 1.5px;
-        border-bottom: 1px solid #1e2736; padding-bottom: 8px; margin-bottom: 10px;
+        border-bottom: 1px solid #2a2d35; padding-bottom: 8px; margin-bottom: 10px;
     }
     .term-row {
         display: flex; justify-content: space-between;
         align-items: center; padding: 3px 0;
-        border-bottom: 1px solid #111820; font-size: 12px;
+        border-bottom: 1px solid #1e2128; font-size: 12px;
     }
     .term-label { color: #6e7f96; }
     .term-val   { color: #e6edf3; font-weight: 600; }
@@ -115,7 +115,7 @@ st.markdown("""
     /* ── Ticker header bar ── */
     .ticker-header {
         display: flex; align-items: baseline; gap: 16px;
-        padding: 10px 0 6px; border-bottom: 1px solid #1e2736; margin-bottom: 12px;
+        padding: 10px 0 6px; border-bottom: 1px solid #2a2d35; margin-bottom: 12px;
     }
     .ticker-symbol {
         font-family: 'IBM Plex Mono', monospace;
@@ -146,7 +146,7 @@ st.markdown("""
 
     /* ── GF boxes ── */
     .gf-box {
-        background:#0d1117; border:1px solid #1e2736; border-radius:5px;
+        background:#1a1d23; border:1px solid #2a2d35; border-radius:5px;
         padding:10px 12px; margin:4px 0;
     }
     .gf-letter { font-size:18px; font-weight:700; font-family:'IBM Plex Mono',monospace;
@@ -168,16 +168,16 @@ st.markdown("""
 
     /* ── AI box ── */
     .ai-box {
-        background:#0a0d14; border:1px solid #2a1f4e; border-radius:5px;
+        background:#111318; border:1px solid #2a1f4e; border-radius:5px;
         padding:18px 20px; font-family:'IBM Plex Mono',monospace; white-space:pre-wrap;
         line-height:1.8; color:#d1d9e6; margin-top:12px; font-size:12px;
     }
 
     /* ── Dividers ── */
-    hr { border-color: #1e2736 !important; }
+    hr { border-color: #2a2d35 !important; }
 
     /* ── Verdict history ── */
-    .verdict-history { background:#0a0d14; border:1px solid #1e2736; border-radius:5px;
+    .verdict-history { background:#111318; border:1px solid #2a2d35; border-radius:5px;
                        padding:10px 14px; margin:6px 0; font-family:'IBM Plex Mono',monospace;
                        font-size:11px; }
     .verdict-changed-buy  { color:#3fb950; font-weight:700; }
@@ -185,31 +185,31 @@ st.markdown("""
     .verdict-changed-avoid{ color:#f85149; font-weight:700; }
 
     /* ── Watchlist ── */
-    .watchlist-row { background:#0d1117; border:1px solid #1e2736; border-radius:5px;
+    .watchlist-row { background:#1a1d23; border:1px solid #2a2d35; border-radius:5px;
                      padding:8px 12px; margin:3px 0; font-family:'IBM Plex Mono',monospace;
                      font-size:12px; }
 
     /* ── Inputs ── */
     .stTextInput input, .stNumberInput input {
-        background: #0d1117 !important; color: #e6edf3 !important;
-        border: 1px solid #1e2736 !important; border-radius: 4px !important;
+        background: #1a1d23 !important; color: #e6edf3 !important;
+        border: 1px solid #2a2d35 !important; border-radius: 4px !important;
         font-family: 'IBM Plex Mono', monospace !important;
     }
-    .stSelectbox > div { background: #0d1117 !important; border: 1px solid #1e2736 !important; }
+    .stSelectbox > div { background: #1a1d23 !important; border: 1px solid #2a2d35 !important; }
 
     /* ── Chat ── */
 
     /* ── Execution panel ── */
     .exec-panel {
-        background: #0d1117; border: 1px solid #1e2736; border-radius: 6px;
+        background: #1a1d23; border: 1px solid #2a2d35; border-radius: 6px;
         padding: 14px 16px;
     }
     .exec-header { font-size: 10px; font-weight: 600; color: #6e7f96;
                    text-transform: uppercase; letter-spacing: 1.5px;
                    padding-bottom: 8px; margin-bottom: 10px;
-                   border-bottom: 1px solid #1e2736; }
+                   border-bottom: 1px solid #2a2d35; }
     .exec-row { display: flex; justify-content: space-between; padding: 4px 0;
-                border-bottom: 1px solid #111820; font-size: 13px; }
+                border-bottom: 1px solid #1e2128; font-size: 13px; }
     .exec-label { color: #6e7f96; font-family: 'IBM Plex Mono', monospace; }
     .exec-val   { color: #e6edf3; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
     .exec-target-2r { color: #3fb950; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
@@ -854,7 +854,7 @@ def make_chart(d, ticker, stop_price, target_2r, target_3r):
     ), row=3, col=1)
     fig.update_layout(
         height=720, template="plotly_dark",
-        plot_bgcolor="#0d1117", paper_bgcolor="#0d1117",
+        plot_bgcolor="#13151a", paper_bgcolor="#13151a",
         font=dict(color="#e6edf3"),
         legend=dict(orientation="h", y=1.02, x=0,
                     bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
@@ -1027,7 +1027,7 @@ with st.sidebar:
 st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 st.markdown("""
 <div style="display:flex;align-items:center;justify-content:space-between;
-            padding:8px 0 6px;border-bottom:1px solid #1e2736;margin-bottom:4px;">
+            padding:8px 0 6px;border-bottom:1px solid #2a2d35;margin-bottom:4px;">
   <div>
     <span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
                  color:#e6edf3;letter-spacing:2px;">PRISM</span>
@@ -1072,8 +1072,15 @@ with tab_single:
 
             # ── Default execution values ──────────────────────
             suggested_stop = round(d["price"] * 0.92, 2)
-            stop_price     = suggested_stop
             dollar_risk    = portfolio * risk_pct
+
+            # Reset stop loss whenever ticker changes so it always
+            # reflects the current stock price, not a stale cached value
+            if st.session_state.get("_stop_ticker") != ticker_input:
+                st.session_state["stop_single"]  = suggested_stop
+                st.session_state["_stop_ticker"] = ticker_input
+
+            stop_price     = suggested_stop
             risk_per_share = max(d["pivot"] - stop_price, 0.01)
             shares         = int(dollar_risk / risk_per_share)
             pos_value      = shares * d["pivot"]
@@ -1093,7 +1100,7 @@ with tab_single:
             w52_lo     = d["df"]["Low"].tail(252).min()
 
             st.markdown(f"""
-            <div style="background:#0d1117;border:1px solid #1e2736;border-radius:6px;
+            <div style="background:#1a1d23;border:1px solid #2a2d35;border-radius:6px;
                         padding:14px 18px;margin-bottom:10px;">
               <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
                 <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;
@@ -1306,7 +1313,7 @@ with tab_single:
                             st.error(f"AI Mentor error: {e}")
 
             # ── WATCHLIST CONTROLS ────────────────────────────
-            st.markdown("<div style='height:4px;border-top:1px solid #1e2736;margin-top:10px;'></div>",
+            st.markdown("<div style='height:4px;border-top:1px solid #2a2d35;margin-top:10px;'></div>",
                         unsafe_allow_html=True)
             wl = wl_load()
             in_watchlist = ticker_input in wl
@@ -1508,7 +1515,7 @@ with tab_scanner:
         def day_bg(v):
             if v > 1:    return "#061810", "#3fb950"
             if v < -1:   return "#160808", "#f85149"
-            return "#0d1117", "#8b949e"
+            return "#1e2128", "#8b949e"
 
         def verdict_cell(v):
             if "BUY"   in v: return "#061810", "#3fb950", "BUY"
@@ -1525,7 +1532,7 @@ with tab_scanner:
         header_cells = "".join([
             f'<th style="padding:6px 10px;text-align:left;font-size:10px;' +
             f'color:#6e7f96;font-weight:600;text-transform:uppercase;' +
-            f'letter-spacing:1px;border-bottom:1px solid #1e2736;' +
+            f'letter-spacing:1px;border-bottom:1px solid #2a2d35;' +
             f'white-space:nowrap;">{c}</th>'
             for c in cols_display
         ])
@@ -1607,7 +1614,7 @@ with tab_scanner:
             hover_in  = "this.style.background='#0d1a28'"
             hover_out = "this.style.background='transparent'"
             row_html = (
-                '<tr style="border-bottom:1px solid #111820;" '
+                '<tr style="border-bottom:1px solid #1e2128;" '
                 f'onmouseover="{hover_in}" onmouseout="{hover_out}">' +
                 "".join(cells) + "</tr>"
             )
@@ -1616,8 +1623,8 @@ with tab_scanner:
         table_html = f"""
         <div style="overflow-x:auto;margin-top:8px;">
           <table style="width:100%;border-collapse:collapse;
-                        background:#080c14;font-family:Inter,sans-serif;">
-            <thead><tr style="background:#0d1117;">{header_cells}</tr></thead>
+                        background:#13151a;font-family:Inter,sans-serif;">
+            <thead><tr style="background:#1a1d23;">{header_cells}</tr></thead>
             <tbody>{"".join(row_htmls)}</tbody>
           </table>
         </div>
@@ -1808,7 +1815,7 @@ if st.session_state["chat_history"]:
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "user":
             chat_html_msgs.append(
-                f'<div style="background:#0d1117;border-radius:4px;padding:10px 14px;'
+                f'<div style="background:#1a1d23;border-radius:4px;padding:10px 14px;'
                 f'margin:4px 0;border-left:2px solid #1f6feb;">'
                 f'<span style="color:#6e7f96;font-size:10px;font-family:IBM Plex Mono,monospace;'
                 f'letter-spacing:1px;">YOU</span><br>'
@@ -1816,7 +1823,7 @@ if st.session_state["chat_history"]:
             )
         else:
             chat_html_msgs.append(
-                f'<div style="background:#080c14;border-radius:4px;padding:10px 14px;'
+                f'<div style="background:#13151a;border-radius:4px;padding:10px 14px;'
                 f'margin:4px 0;border-left:2px solid #6e40c9;">'
                 f'<span style="color:#6e7f96;font-size:10px;font-family:IBM Plex Mono,monospace;'
                 f'letter-spacing:1px;">CLAUDE</span><br>'
@@ -1824,7 +1831,7 @@ if st.session_state["chat_history"]:
                 f'white-space:pre-wrap;line-height:1.7;">{msg["content"]}</span></div>'
             )
     st.markdown(
-        f'<div style="background:#0a0d14;border:1px solid #1e2736;border-radius:6px;'
+        f'<div style="background:#111318;border:1px solid #2a2d35;border-radius:6px;'
         f'padding:12px;max-height:320px;overflow-y:auto;margin-bottom:8px;">'
         + "".join(chat_html_msgs) +
         f'</div>',
@@ -1881,12 +1888,12 @@ if (send_btn or user_input) and user_input.strip():
 st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="display:flex;justify-content:space-between;align-items:center;
-            border-top:1px solid #1e2736;padding-top:10px;margin-top:4px;">
+            border-top:1px solid #2a2d35;padding-top:10px;margin-top:4px;">
   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3a4a5c;">
     PRISM TERMINAL · 1% RISK RULE · STAGE 2 ONLY · NOT FINANCIAL ADVICE
   </span>
   <a href="#top" style="font-family:'IBM Plex Mono',monospace;font-size:11px;
-     color:#58a6ff;text-decoration:none;background:#0d1117;border:1px solid #1e2736;
+     color:#58a6ff;text-decoration:none;background:#1a1d23;border:1px solid #2a2d35;
      border-radius:4px;padding:4px 12px;">↑ Back to Top</a>
 </div>
 """, unsafe_allow_html=True)
