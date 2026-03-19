@@ -23,83 +23,82 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
 
-    /* ── Base — Light Mode ── */
-    .stApp { background-color: #f0f2f5; color: #1a1d23; font-family: 'Inter', sans-serif; }
+    /* ── Base ── */
+    .stApp { background-color: #13151a; color: #d1d9e6; font-family: 'Inter', sans-serif; }
     .main .block-container { padding: 0.75rem 1.5rem 4rem; max-width: 1600px; }
-    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #d0d7de; }
+    [data-testid="stSidebar"] { background-color: #1a1d23; border-right: 1px solid #2a2d35; }
     footer { display: none !important; }
 
     /* ── Typography ── */
-    h1 { color: #1a1d23 !important; font-family: 'Inter', sans-serif !important;
+    h1 { color: #e6edf3 !important; font-family: 'Inter', sans-serif !important;
          font-weight: 700 !important; letter-spacing: -0.5px; }
-    h2, h3, h4 { color: #24292f !important; font-family: 'Inter', sans-serif !important;
+    h2, h3, h4 { color: #c9d1d9 !important; font-family: 'Inter', sans-serif !important;
                   font-weight: 600 !important; }
 
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] {
-        background: #ffffff; border-bottom: 1px solid #d0d7de; gap: 0;
+        background: #1a1d23; border-bottom: 1px solid #2a2d35; gap: 0;
     }
     .stTabs [data-baseweb="tab"] {
-        color: #57606a; font-family: 'Inter', sans-serif;
+        color: #6e7f96; font-family: 'Inter', sans-serif;
         font-size: 13px; font-weight: 500; padding: 10px 20px;
         border-bottom: 2px solid transparent;
     }
     .stTabs [aria-selected="true"] {
-        color: #0969da !important; border-bottom: 2px solid #0969da !important;
+        color: #58a6ff !important; border-bottom: 2px solid #58a6ff !important;
         background: transparent !important;
     }
 
     /* ── Metrics ── */
     [data-testid="metric-container"] {
-        background: #ffffff; border: 1px solid #d0d7de;
+        background: #1a1d23; border: 1px solid #2a2d35;
         border-radius: 6px; padding: 10px 14px;
     }
     [data-testid="stMetricValue"] {
-        color: #1a1d23 !important;
+        color: #e6edf3 !important;
         font-family: 'IBM Plex Mono', monospace !important;
         font-size: 20px !important; font-weight: 600 !important;
     }
-    [data-testid="stMetricLabel"] { color: #57606a !important; font-size: 11px !important;
+    [data-testid="stMetricLabel"] { color: #6e7f96 !important; font-size: 11px !important;
                                     text-transform: uppercase; letter-spacing: 0.5px; }
     [data-testid="stMetricDelta"] { font-family: 'IBM Plex Mono', monospace !important;
                                     font-size: 11px !important; }
 
     /* ── Buttons ── */
     .stButton > button {
-        background: #f6f8fa; color: #0969da;
-        border: 1px solid #d0d7de; border-radius: 5px;
+        background: #1a2332; color: #58a6ff;
+        border: 1px solid #2a3a52; border-radius: 5px;
         font-family: 'Inter', sans-serif; font-size: 13px;
         font-weight: 500; padding: 6px 16px; transition: all 0.15s;
     }
     .stButton > button:hover {
-        background: #0969da; color: white; border-color: #0969da;
+        background: #1f6feb; color: white; border-color: #1f6feb;
     }
     .stButton > button[kind="primary"] {
-        background: #0969da; color: white; border-color: #0969da;
+        background: #1f6feb; color: white; border-color: #1f6feb;
     }
 
     /* ── Terminal Panel ── */
     .term-panel {
-        background: #ffffff; border: 1px solid #d0d7de;
+        background: #1a1d23; border: 1px solid #2a2d35;
         border-radius: 6px; padding: 14px 16px; margin-bottom: 10px;
         font-family: 'IBM Plex Mono', monospace;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     .term-panel-header {
-        font-size: 10px; font-weight: 600; color: #57606a;
+        font-size: 10px; font-weight: 600; color: #6e7f96;
         text-transform: uppercase; letter-spacing: 1.5px;
-        border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-bottom: 10px;
+        border-bottom: 1px solid #2a2d35; padding-bottom: 8px; margin-bottom: 10px;
     }
     .term-row {
         display: flex; justify-content: space-between;
         align-items: center; padding: 3px 0;
-        border-bottom: 1px solid #eaeef2; font-size: 12px;
+        border-bottom: 1px solid #1e2128; font-size: 12px;
     }
-    .term-label { color: #57606a; }
-    .term-val   { color: #1a1d23; font-weight: 600; }
-    .term-pass  { color: #1a7f37; font-weight: 700; }
-    .term-fail  { color: #cf222e; font-weight: 700; }
-    .term-warn  { color: #9a6700; font-weight: 700; }
+    .term-label { color: #6e7f96; }
+    .term-val   { color: #e6edf3; font-weight: 600; }
+    .term-pass  { color: #3fb950; font-weight: 700; }
+    .term-fail  { color: #f85149; font-weight: 700; }
+    .term-warn  { color: #d29922; font-weight: 700; }
 
     /* ── Verdict ── */
     .verdict-box {
@@ -108,31 +107,31 @@ st.markdown("""
         font-family: 'IBM Plex Mono', monospace; letter-spacing: 2px;
         text-transform: uppercase;
     }
-    .verdict-buy   { background:#dafbe1; color:#1a7f37; border:1px solid #82cfab; }
-    .verdict-wait  { background:#fff8c5; color:#9a6700; border:1px solid #d4a72c; }
-    .verdict-watch { background:#ddf4ff; color:#0969da; border:1px solid #80ccff; }
-    .verdict-avoid { background:#ffebe9; color:#cf222e; border:1px solid #ff8182; }
+    .verdict-buy   { background:#061810; color:#3fb950; border:1px solid #238636; }
+    .verdict-wait  { background:#1a1200; color:#d29922; border:1px solid #9e6a03; }
+    .verdict-watch { background:#060f1e; color:#58a6ff; border:1px solid #1f6feb; }
+    .verdict-avoid { background:#160808; color:#f85149; border:1px solid #b91c1c; }
 
     /* ── Ticker header bar ── */
     .ticker-header {
         display: flex; align-items: baseline; gap: 16px;
-        padding: 10px 0 6px; border-bottom: 1px solid #d0d7de; margin-bottom: 12px;
+        padding: 10px 0 6px; border-bottom: 1px solid #2a2d35; margin-bottom: 12px;
     }
     .ticker-symbol {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 28px; font-weight: 700; color: #1a1d23;
+        font-size: 28px; font-weight: 700; color: #e6edf3;
     }
-    .ticker-name   { font-size: 13px; color: #57606a; }
+    .ticker-name   { font-size: 13px; color: #6e7f96; }
     .ticker-price  {
         font-family: 'IBM Plex Mono', monospace;
-        font-size: 26px; font-weight: 600; color: #1a1d23; margin-left: auto;
+        font-size: 26px; font-weight: 600; color: #e6edf3; margin-left: auto;
     }
-    .ticker-chg-pos { color: #1a7f37; font-family: 'IBM Plex Mono', monospace;
+    .ticker-chg-pos { color: #3fb950; font-family: 'IBM Plex Mono', monospace;
                       font-size: 14px; font-weight: 600; }
-    .ticker-chg-neg { color: #cf222e; font-family: 'IBM Plex Mono', monospace;
+    .ticker-chg-neg { color: #f85149; font-family: 'IBM Plex Mono', monospace;
                       font-size: 14px; font-weight: 600; }
-    .ticker-sector { font-size: 11px; color: #0969da; background: #ddf4ff;
-                     padding: 2px 8px; border-radius: 3px; border: 1px solid #80ccff; }
+    .ticker-sector { font-size: 11px; color: #58a6ff; background: #061828;
+                     padding: 2px 8px; border-radius: 3px; border: 1px solid #1a3a5c; }
 
     /* ── Score badges ── */
     .score-badge {
@@ -140,84 +139,83 @@ st.markdown("""
         font-size: 11px; font-weight: 700; padding: 2px 7px;
         border-radius: 3px; letter-spacing: 0.5px;
     }
-    .badge-green { background:#dafbe1; color:#1a7f37; border:1px solid #82cfab; }
-    .badge-amber { background:#fff8c5; color:#9a6700; border:1px solid #d4a72c; }
-    .badge-red   { background:#ffebe9; color:#cf222e; border:1px solid #ff8182; }
-    .badge-blue  { background:#ddf4ff; color:#0969da; border:1px solid #80ccff; }
+    .badge-green { background:#0d2f1a; color:#3fb950; border:1px solid #238636; }
+    .badge-amber { background:#1f1500; color:#d29922; border:1px solid #9e6a03; }
+    .badge-red   { background:#1e0a0a; color:#f85149; border:1px solid #b91c1c; }
+    .badge-blue  { background:#06101e; color:#58a6ff; border:1px solid #1f6feb; }
 
     /* ── GF boxes ── */
     .gf-box {
-        background:#f6f8fa; border:1px solid #d0d7de; border-radius:5px;
+        background:#1a1d23; border:1px solid #2a2d35; border-radius:5px;
         padding:10px 12px; margin:4px 0;
     }
     .gf-letter { font-size:18px; font-weight:700; font-family:'IBM Plex Mono',monospace;
                  margin-right:6px; }
-    .gf-pass { color:#1a7f37; }
-    .gf-fail { color:#cf222e; }
-    .gf-warn { color:#9a6700; }
+    .gf-pass { color:#3fb950; }
+    .gf-fail { color:#f85149; }
+    .gf-warn { color:#d29922; }
 
     /* ── Market badge ── */
-    .market-bull { background:#dafbe1; color:#1a7f37; border:1px solid #82cfab;
+    .market-bull { background:#061810; color:#3fb950; border:1px solid #238636;
                    border-radius:4px; padding:6px 12px; font-weight:700;
                    font-family:'IBM Plex Mono',monospace; font-size:12px; display:inline-block; }
-    .market-bear { background:#ffebe9; color:#cf222e; border:1px solid #ff8182;
+    .market-bear { background:#160808; color:#f85149; border:1px solid #b91c1c;
                    border-radius:4px; padding:6px 12px; font-weight:700;
                    font-family:'IBM Plex Mono',monospace; font-size:12px; display:inline-block; }
-    .market-neutral { background:#fff8c5; color:#9a6700; border:1px solid #d4a72c;
+    .market-neutral { background:#1a1200; color:#d29922; border:1px solid #9e6a03;
                       border-radius:4px; padding:6px 12px; font-weight:700;
                       font-family:'IBM Plex Mono',monospace; font-size:12px; display:inline-block; }
 
     /* ── AI box ── */
     .ai-box {
-        background:#f6f8fa; border:1px solid #d0d7de; border-radius:5px;
+        background:#111318; border:1px solid #2a1f4e; border-radius:5px;
         padding:18px 20px; font-family:'IBM Plex Mono',monospace; white-space:pre-wrap;
-        line-height:1.8; color:#1a1d23; margin-top:12px; font-size:12px;
-        border-left: 3px solid #8250df;
+        line-height:1.8; color:#d1d9e6; margin-top:12px; font-size:12px;
     }
 
     /* ── Dividers ── */
-    hr { border-color: #d0d7de !important; }
+    hr { border-color: #2a2d35 !important; }
 
     /* ── Verdict history ── */
-    .verdict-history { background:#f6f8fa; border:1px solid #d0d7de; border-radius:5px;
+    .verdict-history { background:#111318; border:1px solid #2a2d35; border-radius:5px;
                        padding:10px 14px; margin:6px 0; font-family:'IBM Plex Mono',monospace;
                        font-size:11px; }
-    .verdict-changed-buy  { color:#1a7f37; font-weight:700; }
-    .verdict-changed-wait { color:#9a6700; font-weight:700; }
-    .verdict-changed-avoid{ color:#cf222e; font-weight:700; }
+    .verdict-changed-buy  { color:#3fb950; font-weight:700; }
+    .verdict-changed-wait { color:#d29922; font-weight:700; }
+    .verdict-changed-avoid{ color:#f85149; font-weight:700; }
 
     /* ── Watchlist ── */
-    .watchlist-row { background:#ffffff; border:1px solid #d0d7de; border-radius:5px;
+    .watchlist-row { background:#1a1d23; border:1px solid #2a2d35; border-radius:5px;
                      padding:8px 12px; margin:3px 0; font-family:'IBM Plex Mono',monospace;
                      font-size:12px; }
 
     /* ── Inputs ── */
     .stTextInput input, .stNumberInput input {
-        background: #ffffff !important; color: #1a1d23 !important;
-        border: 1px solid #d0d7de !important; border-radius: 4px !important;
+        background: #1a1d23 !important; color: #e6edf3 !important;
+        border: 1px solid #2a2d35 !important; border-radius: 4px !important;
         font-family: 'IBM Plex Mono', monospace !important;
     }
-    .stSelectbox > div { background: #ffffff !important; border: 1px solid #d0d7de !important; }
+    .stSelectbox > div { background: #1a1d23 !important; border: 1px solid #2a2d35 !important; }
 
     /* ── Chat ── */
 
     /* ── Execution panel ── */
     .exec-panel {
-        background: #ffffff; border: 1px solid #d0d7de; border-radius: 6px;
+        background: #1a1d23; border: 1px solid #2a2d35; border-radius: 6px;
         padding: 14px 16px;
     }
-    .exec-header { font-size: 10px; font-weight: 600; color: #57606a;
+    .exec-header { font-size: 10px; font-weight: 600; color: #6e7f96;
                    text-transform: uppercase; letter-spacing: 1.5px;
                    padding-bottom: 8px; margin-bottom: 10px;
-                   border-bottom: 1px solid #d0d7de; }
+                   border-bottom: 1px solid #2a2d35; }
     .exec-row { display: flex; justify-content: space-between; padding: 4px 0;
-                border-bottom: 1px solid #eaeef2; font-size: 13px; }
-    .exec-label { color: #57606a; font-family: 'IBM Plex Mono', monospace; }
-    .exec-val   { color: #1a1d23; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
-    .exec-target-2r { color: #1a7f37; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
-    .exec-target-3r { color: #116329; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
-    .exec-stop  { color: #cf222e; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
-    .exec-entry { color: #0969da; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+                border-bottom: 1px solid #1e2128; font-size: 13px; }
+    .exec-label { color: #6e7f96; font-family: 'IBM Plex Mono', monospace; }
+    .exec-val   { color: #e6edf3; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-target-2r { color: #3fb950; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-target-3r { color: #b9f6ca; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-stop  { color: #f85149; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .exec-entry { color: #58a6ff; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -874,7 +872,7 @@ def make_chart(d, ticker, stop_price, target_2r, target_3r):
     ), row=3, col=1)
     fig.update_layout(
         height=720, template="plotly_dark",
-        plot_bgcolor="#ffffff", paper_bgcolor="#f0f2f5",
+        plot_bgcolor="#13151a", paper_bgcolor="#13151a",
         font=dict(color="#e6edf3"),
         legend=dict(orientation="h", y=1.02, x=0,
                     bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
@@ -951,7 +949,7 @@ def render_gf_panel(cs, breakdown, gf_score, market_status, market_detail):
             st.markdown(
                 f'<div class="gf-box">'
                 f'<span class="gf-letter {c_cls}">{letter}</span>'
-                f'<strong style="color:#1a1d23;">{icon} {data["label"]}</strong><br>'
+                f'<strong style="color:#e6edf3;">{icon} {data["label"]}</strong><br>'
                 f'<span style="color:#8b949e;font-size:12px;">{data["detail"]}</span>'
                 f'</div>',
                 unsafe_allow_html=True
@@ -1104,14 +1102,14 @@ with st.sidebar:
 st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 st.markdown("""
 <div style="display:flex;align-items:center;justify-content:space-between;
-            padding:8px 0 6px;border-bottom:1px solid #d0d7de;margin-bottom:4px;">
+            padding:8px 0 6px;border-bottom:1px solid #2a2d35;margin-bottom:4px;">
   <div>
     <span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
-                 color:#1a1d23;letter-spacing:2px;">PRISM</span>
-    <span style="font-family:'Inter',sans-serif;font-size:13px;color:#57606a;
+                 color:#e6edf3;letter-spacing:2px;">PRISM</span>
+    <span style="font-family:'Inter',sans-serif;font-size:13px;color:#6e7f96;
                  margin-left:12px;">Price · RS · Institutional · Stage · Momentum</span>
   </div>
-  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8c959f;
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3a4a5c;
               text-align:right;">PERSONAL TERMINAL&nbsp;&nbsp;|&nbsp;&nbsp;NOT FINANCIAL ADVICE</div>
 </div>
 """, unsafe_allow_html=True)
@@ -1177,18 +1175,18 @@ with tab_single:
             w52_lo     = d["df"]["Low"].tail(252).min()
 
             st.markdown(f"""
-            <div style="background:#ffffff;border:1px solid #d0d7de;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.06);
+            <div style="background:#1a1d23;border:1px solid #2a2d35;border-radius:6px;
                         padding:14px 18px;margin-bottom:10px;">
               <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
                 <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;
-                             font-weight:700;color:#1a1d23;">{ticker_input}</span>
-                <span style="font-size:13px;color:#57606a;max-width:300px;
+                             font-weight:700;color:#e6edf3;">{ticker_input}</span>
+                <span style="font-size:13px;color:#6e7f96;max-width:300px;
                              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{d['name']}</span>
                 <span style="font-size:11px;color:#58a6ff;background:#061828;
                              padding:2px 8px;border-radius:3px;border:1px solid #1a3a5c;">{d['sector']}</span>
                 <div style="margin-left:auto;text-align:right;">
                   <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;
-                               font-weight:700;color:#1a1d23;">${d['price']:.2f}</span>
+                               font-weight:700;color:#e6edf3;">${d['price']:.2f}</span>
                   <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;
                                color:{chg_color};margin-left:10px;">
                     {chg_sign}{day_chg:.2f} ({chg_sign}{day_chg_pct:.2f}%)
@@ -1196,13 +1194,13 @@ with tab_single:
                 </div>
               </div>
               <div style="display:flex;gap:24px;margin-top:10px;flex-wrap:wrap;
-                          font-family:'IBM Plex Mono',monospace;font-size:11px;color:#57606a;">
-                <span>MKT CAP <strong style="color:#1a1d23;">{mktcap_str}</strong></span>
-                <span>VOL <strong style="color:#1a1d23;">{vol_str}</strong></span>
-                <span>AVG VOL <strong style="color:#1a1d23;">{avg_vol_str}</strong></span>
+                          font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6e7f96;">
+                <span>MKT CAP <strong style="color:#c9d1d9;">{mktcap_str}</strong></span>
+                <span>VOL <strong style="color:#c9d1d9;">{vol_str}</strong></span>
+                <span>AVG VOL <strong style="color:#c9d1d9;">{avg_vol_str}</strong></span>
                 <span>RVOL <strong style="color:{'#3fb950' if rvol>=1.5 else '#c9d1d9'};">{rvol:.1f}x</strong></span>
-                <span>52W HI <strong style="color:#1a1d23;">${w52_hi:.2f}</strong></span>
-                <span>52W LO <strong style="color:#1a1d23;">${w52_lo:.2f}</strong></span>
+                <span>52W HI <strong style="color:#c9d1d9;">${w52_hi:.2f}</strong></span>
+                <span>52W LO <strong style="color:#c9d1d9;">${w52_lo:.2f}</strong></span>
                 <span>EPS GR <strong style="color:{'#3fb950' if d['eps_growth']>0.25 else '#c9d1d9'};">{d['eps_growth']*100:.1f}%</strong></span>
                 <span>REV GR <strong style="color:{'#3fb950' if d['rev_growth']>0.15 else '#c9d1d9'};">{d['rev_growth']*100:.1f}%</strong></span>
               </div>
@@ -1233,7 +1231,7 @@ with tab_single:
                 st.markdown(
                     f'<div class="verdict-history">'
                     f'🔄 Verdict changed &nbsp;|&nbsp; '
-                    f'<span style="color:#57606a;">Last: {prior["date"]} · '
+                    f'<span style="color:#6e7f96;">Last: {prior["date"]} · '
                     f'{prior["verdict"]} · ${prior["price"]} · TT {prior["tt"]}/8 · VCS {prior["vcp"]}</span>'
                     f'&nbsp;→&nbsp;<span class="{delta_color}">{verdict_text}</span>'
                     f'</div>',
@@ -1364,7 +1362,7 @@ with tab_single:
                 run_ai = st.button("🤖 AI Mentor Analysis", type="primary", use_container_width=True)
             with ai_col2:
                 st.markdown(
-                    "<p style='color:#57606a;font-size:11px;font-family:IBM Plex Mono,monospace;"
+                    "<p style='color:#6e7f96;font-size:11px;font-family:IBM Plex Mono,monospace;"
                     "margin-top:8px;'>Claude analyzes PRISM scores, GF Score, VCS setup, "
                     "and generates trade commentary with risk levels.</p>",
                     unsafe_allow_html=True
@@ -1373,13 +1371,13 @@ with tab_single:
             prior_entry = vm_get_last_commentary(ticker_input)
             if prior_entry and prior_entry.get("ai_commentary"):
                 st.markdown(
-                    f'<div style="background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;'
+                    f'<div style="background:#111318;border:1px solid #2a2d35;border-radius:4px;'
                     f'padding:6px 12px;margin-bottom:6px;font-family:IBM Plex Mono,monospace;font-size:11px;">'
-                    f'🧠 <span style="color:#0969da;">Prior analysis found</span> '
-                    f'<span style="color:#57606a;">— {prior_entry["date"]} · '
+                    f'🧠 <span style="color:#58a6ff;">Prior analysis found</span> '
+                    f'<span style="color:#6e7f96;">— {prior_entry["date"]} · '
                     f'TT {prior_entry["tt"]}/8 · VCS {prior_entry["vcp"]} · GF {prior_entry["gf"]}/7 · '
                     f'${prior_entry["price"]}</span> — '
-                    f'<span style="color:#9a6700;">AI will compare against this</span>'
+                    f'<span style="color:#d29922;">AI will compare against this</span>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
@@ -1407,7 +1405,7 @@ with tab_single:
                             st.error(f"AI Mentor error: {e}")
 
             # ── WATCHLIST CONTROLS ────────────────────────────
-            st.markdown("<div style='height:4px;border-top:1px solid #d0d7de;margin-top:10px;'></div>",
+            st.markdown("<div style='height:4px;border-top:1px solid #2a2d35;margin-top:10px;'></div>",
                         unsafe_allow_html=True)
             wl = wl_load()
             in_watchlist = ticker_input in wl
@@ -1450,7 +1448,7 @@ with tab_single:
                                 "verdict-changed-avoid"
                         st.markdown(
                             f'<div class="verdict-history">'
-                            f'<span style="color:#57606a;">{entry["date"]}</span> &nbsp;|&nbsp; '
+                            f'<span style="color:#6e7f96;">{entry["date"]}</span> &nbsp;|&nbsp; '
                             f'${entry["price"]} &nbsp;|&nbsp; '
                             f'TT {entry["tt"]}/8 &nbsp;|&nbsp; '
                             f'VCS {entry["vcp"]} &nbsp;|&nbsp; '
@@ -1625,8 +1623,8 @@ with tab_scanner:
 
         header_cells = "".join([
             f'<th style="padding:6px 10px;text-align:left;font-size:10px;' +
-            f'color:#57606a;font-weight:600;text-transform:uppercase;' +
-            f'letter-spacing:1px;border-bottom:1px solid #d0d7de;' +
+            f'color:#6e7f96;font-weight:600;text-transform:uppercase;' +
+            f'letter-spacing:1px;border-bottom:1px solid #2a2d35;' +
             f'white-space:nowrap;">{c}</th>'
             for c in cols_display
         ])
@@ -1651,12 +1649,12 @@ with tab_scanner:
                 f'font-size:13px;font-weight:700;color:#58a6ff;' +
                 f'white-space:nowrap;cursor:pointer;">{row["Ticker"]}</td>',
                 # Name
-                f'<td style="padding:6px 10px;font-size:11px;color:#57606a;' +
+                f'<td style="padding:6px 10px;font-size:11px;color:#6e7f96;' +
                 f'max-width:140px;overflow:hidden;text-overflow:ellipsis;' +
                 f'white-space:nowrap;">{row["Name"][:20]}</td>',
                 # Price
                 f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
-                f'font-size:13px;color:#1a1d23;font-weight:600;">${row["Price"]:.2f}</td>',
+                f'font-size:13px;color:#e6edf3;font-weight:600;">${row["Price"]:.2f}</td>',
                 # Day%
                 f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
                 f'font-size:12px;background:{day_b};color:{day_c};' +
@@ -1694,7 +1692,7 @@ with tab_scanner:
                 f'font-size:12px;color:{rvol_c};">{row["RVOL"]:.1f}x</td>',
                 # %toPivot
                 f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
-                f'font-size:12px;color:#57606a;">{row["%toPivot"]:+.1f}%</td>',
+                f'font-size:12px;color:#6e7f96;">{row["%toPivot"]:+.1f}%</td>',
                 # Pivot
                 f'<td style="padding:6px 10px;font-family:IBM Plex Mono,monospace;' +
                 f'font-size:12px;color:#58a6ff;">${row["Pivot"]:.2f}</td>',
@@ -1894,7 +1892,7 @@ st.markdown("""
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
   <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
                color:#c9d1d9;letter-spacing:1px;">ASK CLAUDE — PRISM MENTOR</span>
-  <span style="font-size:11px;color:#8c959f;font-family:'IBM Plex Mono',monospace;">
+  <span style="font-size:11px;color:#3a4a5c;font-family:'IBM Plex Mono',monospace;">
     Methodology · Setups · Position Sizing · Market Conditions
   </span>
 </div>
@@ -1911,21 +1909,21 @@ if st.session_state["chat_history"]:
             chat_html_msgs.append(
                 f'<div style="background:#1a1d23;border-radius:4px;padding:10px 14px;'
                 f'margin:4px 0;border-left:2px solid #1f6feb;">'
-                f'<span style="color:#57606a;font-size:10px;font-family:IBM Plex Mono,monospace;'
+                f'<span style="color:#6e7f96;font-size:10px;font-family:IBM Plex Mono,monospace;'
                 f'letter-spacing:1px;">YOU</span><br>'
-                f'<span style="color:#1a1d23;font-size:13px;">{msg["content"]}</span></div>'
+                f'<span style="color:#e6edf3;font-size:13px;">{msg["content"]}</span></div>'
             )
         else:
             chat_html_msgs.append(
                 f'<div style="background:#13151a;border-radius:4px;padding:10px 14px;'
                 f'margin:4px 0;border-left:2px solid #6e40c9;">'
-                f'<span style="color:#57606a;font-size:10px;font-family:IBM Plex Mono,monospace;'
+                f'<span style="color:#6e7f96;font-size:10px;font-family:IBM Plex Mono,monospace;'
                 f'letter-spacing:1px;">CLAUDE</span><br>'
                 f'<span style="color:#d1d9e6;font-size:13px;font-family:IBM Plex Mono,monospace;'
                 f'white-space:pre-wrap;line-height:1.7;">{msg["content"]}</span></div>'
             )
     st.markdown(
-        f'<div style="background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;'
+        f'<div style="background:#111318;border:1px solid #2a2d35;border-radius:6px;'
         f'padding:12px;max-height:320px;overflow-y:auto;margin-bottom:8px;">'
         + "".join(chat_html_msgs) +
         f'</div>',
@@ -1982,8 +1980,8 @@ if (send_btn or user_input) and user_input.strip():
 st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="display:flex;justify-content:space-between;align-items:center;
-            border-top:1px solid #d0d7de;padding-top:10px;margin-top:4px;">
-  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8c959f;">
+            border-top:1px solid #2a2d35;padding-top:10px;margin-top:4px;">
+  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3a4a5c;">
     PRISM TERMINAL · 1% RISK RULE · STAGE 2 ONLY · NOT FINANCIAL ADVICE
   </span>
   <a href="#top" style="font-family:'IBM Plex Mono',monospace;font-size:11px;
