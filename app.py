@@ -24,7 +24,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
 
     /* ── Base ── */
-    .stApp { background-color: #1c2333; color: #d1d9e6; font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #2d3139; color: #d1d9e6; font-family: 'Inter', sans-serif; }
     .main .block-container { padding: 0.75rem 1.5rem 4rem; max-width: 1600px; }
     [data-testid="stSidebar"] { background-color: #1a1d23; border-right: 1px solid #2a2d35; }
     footer { display: none !important; }
